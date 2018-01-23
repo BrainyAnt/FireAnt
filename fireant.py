@@ -10,7 +10,6 @@ import xml.etree.ElementTree as ET
 import json
 import urllib2
 import pyrebase
-from std_msgs.msg import String
 
 # Exception class definition
 class TokenRequestExrror(Exception):
