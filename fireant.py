@@ -206,4 +206,8 @@ class FireAnt:
 
     def publish_data(self, data):
         """Publish data to database"""
-        self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('users').child(self.userID).child("ControlData").child("sensors").update(data, token=self.idToken)
+        sensor_name = data[0]
+        sensor_value = data[1]
+        sensor_request = data[2]
+        self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('users').child(self.userID).child("ControlData").child("sensors").child(sensor_name).update({'request': sensor_request}, token=self.idToken)
+        self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('users').child(self.userID).child("ControlData").child("sensors").child(sensor_name).update({'value': sensor_value}, token=self.idToken)
