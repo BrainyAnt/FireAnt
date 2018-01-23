@@ -18,6 +18,7 @@ class InvalidTokenException(Exception):
     pass
 
 class FireAnt:
+    """The BrainyAnt firebase communication class"""
     #members
     #database
     #idToken
@@ -42,8 +43,8 @@ class FireAnt:
         DB = FIREBASE.database()
         
         try:
-            #DIR = os.path.dirname(os.path.realpath(__file__))
-            AUTH_DATA = json.load(open(os.path.dirname(os.path.realpath(__file__)) + '/' + authfile))
+            DIR = os.path.dirname(os.path.realpath(__file__))
+            AUTH_DATA = json.load(open(DIR + '/' + authfile))
         except IOError:
             print("Config file not found!")
             sys.exit()
@@ -51,9 +52,7 @@ class FireAnt:
         try:
             REQUEST = urllib2.Request('https://robots.brainyant.com:8080/robotLogin')
             REQUEST.add_header('Content-Type', 'application/json')
-            #========================NO ANSWER======================================
             RESPONSE = urllib2.urlopen(REQUEST, json.dumps(AUTH_DATA))
-            #==============================================================
             TOKEN = json.loads(RESPONSE.read())['customToken']
             if TOKEN is None:
                 raise TokenRequestError
@@ -72,10 +71,10 @@ class FireAnt:
 
         self.database = DB
         self.idToken = IDTOKEN
-        self.ownerID = AUTH_DATA["owner_ID"]
-        self.robotID = AUTH_DATA["robot_ID"]
-        #p1 = Process(target = self.start_still_alive_every_n_secs, args = [1])
-        #p1.start()
+        self.ownerID = AUTH_DATA["ownerID"]
+        self.robotID = AUTH_DATA["robotID"]
+        p1 = Process(target = self.start_still_alive_every_n_secs, args = [1])
+        p1.start()
 
     def get_name(self):
         """Return robot name"""
@@ -97,6 +96,7 @@ class FireAnt:
 
     def get_first_user(self):
         """Get first user information"""
+        (uid, useron, user_entry) = (None, None, None)
         firstuser = self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('queue').order_by_key().limit_to_first(1).get(token=self.idToken)
         try:
             for i in firstuser.each():
@@ -110,6 +110,7 @@ class FireAnt:
         self.userID = uid
         self.userOn = useron
         self.userEntry = user_entry
+        return (user_entry, uid, useron)
 
     def get_useron(self):
         """Get first user status"""
@@ -123,7 +124,11 @@ class FireAnt:
 
     def get_control_data(self):
         """Return ControlData values from firebase"""
-        return self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('users').child(self.userID).child("ControlData").order_by_key().get(token=self.idToken)
+        user_id = self.get_first_user()[1]
+        try:
+            return self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('users').child(user_id).child("ControlData").order_by_key().get(token=self.idToken).val()
+        except TypeError:
+            return None
     
     def set_robotOn(self):
         """Set robotOn flag to True"""
@@ -167,7 +172,7 @@ class FireAnt:
         """Start a recurring function that signals the robot is online every n seconds"""
         try:
             scheduler = sched.scheduler(time.time, time.sleep)
-            scheduler.enter(n_seconds, 1, self.still_alive, (self, scheduler, n_seconds))
+            scheduler.enter(n_seconds, 1, self.still_alive, (scheduler, n_seconds))
             scheduler.run()
         except KeyboardInterrupt:
             sys.exit(1)
@@ -179,32 +184,26 @@ class FireAnt:
         urllib2.urlopen(iamalive, json.dumps({'robotID': self.robotID}))
         try:
             if self.is_robot_online():
-                scheduler.enter(n_seconds, 1, self.still_alive, (self, scheduler, n_seconds))
+                scheduler.enter(n_seconds, 1, self.still_alive, (scheduler, n_seconds))
         except KeyboardInterrupt:
             sys.exit(1)
 
-#    def wait_for_users():
-#        """Wait for user to show up in queue"""
-#        # Get UID
-#        try:
-#            u_entry = None
-#            userid = None
-#            uon = None
-#            while userid is None:
-#                (userid, uon, u_entry) = get_first_user()
-#            wait_for_user_on(u_entry, userid, uon)
-#        except KeyboardInterrupt:
-#            print("INTERRUPT!")
-#            sys.exit(0)
-#
-#    def wait_for_user_on(u_entry, userid, uon):
-#        """Wait for current user to be online"""
-#        try:
-#            while not uon:
-#                uon = get_useron()
-#            set_robotOn(u_entry)
-#            set_startControl(u_entry)
-#            listen_for_commands(u_entry, userid, uon)
-#        except KeyboardInterrupt:
-#            print("INTERRUPT!")
-#            exit(0)
+    def wait_for_available_user(self):
+        """Wait for user to show up in queue"""
+        # Get UID
+        try:
+            u_entry = None
+            userid = None
+            uon = None
+            while userid is None and uon is None:
+                (u_entry, userid, uon) = self.get_first_user()
+        except KeyboardInterrupt:
+            print("INTERRUPT!")
+            sys.exit(0)
+        self.set_robotOn()
+        self.set_startControl()
+        return (u_entry, userid, uon)
+
+    def publish_data(self, data):
+        """Publish data to database"""
+        self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('users').child(self.userID).child("ControlData").child("sensors").update(data, token=self.idToken)
