@@ -31,6 +31,7 @@ class FireAnt:
     #methods
     def __init__(self, authfile):    
         """ Register with firebase using authentication data. Return database reference, toke, and userID """
+        
         FIREBASE_CONFIG = {
             "apiKey": "AIzaSyDC23ZxJ7YjwVfM0BQ2o6zAtWinFrxCrcI",
             "authDomain": "brainyant-2e30d.firebaseapp.com",
@@ -211,3 +212,11 @@ class FireAnt:
         sensor_request = data[2]
         self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('users').child(self.userID).child("ControlData").child("sensors").child(sensor_name).update({'request': sensor_request}, token=self.idToken)
         self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('users').child(self.userID).child("ControlData").child("sensors").child(sensor_name).update({'value': sensor_value}, token=self.idToken)
+
+    def get_sensor_request(self, sensor):
+        try:
+            return self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('users').child(self.userID).child("ControlData").child("sensors").child(sensor).child('request').get(token=self.idToken).val()
+        except TypeError:
+            self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('users').child(self.userID).child("ControlData").child("sensors").child(sensor).update({'request': False}, token=self.idToken)
+            print('Sensor might not be registered')
+            return False
