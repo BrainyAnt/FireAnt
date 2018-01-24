@@ -8,6 +8,7 @@ import time
 import json
 import urllib2
 import pyrebase
+import subprocess
 
 # Exception class definition
 class TokenRequestError(Exception):
@@ -74,8 +75,22 @@ class FireAnt:
         self.idToken = IDTOKEN
         self.ownerID = AUTH_DATA["ownerID"]
         self.robotID = AUTH_DATA["robotID"]
+
+        self.start_stream()
+
         p1 = Process(target = self.start_still_alive_every_n_secs, args = [1])
         p1.start()
+
+    def start_stream(self):
+        try:
+            #start stream
+            camera = self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('profile').child('name').get(token=self.idToken).val()
+            secretKey = self.database.child('users').child(self.ownerID).child('cameras').child(camera).child('secretKey').get(token=self.idToken).val()
+            streamParam = self.ownerID + '/' + camera + '/' + secretKey
+            subprocess.call(["/BrainyAnt/stream", streamParam])
+        except IOError:
+            print("Stream start error")
+            sys.exit(3)
 
     def get_name(self):
         """Return robot name"""
