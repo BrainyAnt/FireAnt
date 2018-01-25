@@ -98,6 +98,8 @@ class FireAnt:
             secretKey = self.database.child('users').child(self.ownerID).child('cameras').child(camera).child('secretKey').get(token=self.idToken).val()
             streamParam = self.ownerID + '/' + camera + '/' + secretKey
             print(streamParam)
+            DIR = os.path.dirname(os.path.realpath(__file__))
+            os.spawnl(os.P_NOWAIT, DIR+'/stream.sh', streamParam)
             subprocess.call(["stream.sh", streamParam])
         except IOError:
             print("Stream start error")
