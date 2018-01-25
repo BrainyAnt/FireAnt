@@ -6,9 +6,10 @@ import sched
 from multiprocessing import Process
 import time
 import json
-import urllib3
+import urllib2
 import pyrebase
 import subprocess
+import requests
 
 # Exception class definition
 class TokenRequestError(Exception):
@@ -51,10 +52,17 @@ class FireAnt:
             print("Config file not found!")
             sys.exit()
 
+        #try:
+        #    payload =  AUTH_DATA
+        #    r = requests.get('https://robots.brainyant.com:8080/robotLogin', params = payload)
+        #    TOKEN = r.json()
+        #    print(TOKEN)
+        #except TokenRequestError:
+        #    print('ERROR getting token')
         try:
-            REQUEST = urllib3.Request('https://robots.brainyant.com:8080/robotLogin')
+            REQUEST = urllib2.Request('https://robots.brainyant.com:8080/robotLogin')
             REQUEST.add_header('Content-Type', 'application/json')
-            RESPONSE = urllib3.urlopen(REQUEST, json.dumps(AUTH_DATA))
+            RESPONSE = urllib2.urlopen(REQUEST, json.dumps(AUTH_DATA))
             TOKEN = json.loads(RESPONSE.read())['customToken']
             if TOKEN is None:
                 raise TokenRequestError
@@ -84,11 +92,11 @@ class FireAnt:
     def start_stream(self):
         try:
             #start stream
-            camera = self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('profile').child('name').get(token=self.idToken).val()
+            camera = self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('profile').child('stream').get(token=self.idToken).val()
             secretKey = self.database.child('users').child(self.ownerID).child('cameras').child(camera).child('secretKey').get(token=self.idToken).val()
             streamParam = self.ownerID + '/' + camera + '/' + secretKey
             print(streamParam)
-            subprocess.call(["/BrainyAnt/stream", streamParam])
+            subprocess.call(["stream.sh", streamParam])
         except IOError:
             print("Stream start error")
             sys.exit(3)
@@ -196,9 +204,9 @@ class FireAnt:
 
     def still_alive(self, scheduler, n_seconds):
         """Send a signal to the server every n seconds"""
-        iamalive = urllib3.Request('https://robots.brainyant.com:8080/iAmAlive')
+        iamalive = urllib2.Request('https://robots.brainyant.com:8080/iAmAlive')
         iamalive.add_header('Content-Type', 'application/json')
-        urllib3.urlopen(iamalive, json.dumps({'robotID': self.robotID}))
+        urllib2.urlopen(iamalive, json.dumps({'robotID': self.robotID}))
         try:
             if self.is_robot_online():
                 scheduler.enter(n_seconds, 1, self.still_alive, (scheduler, n_seconds))
