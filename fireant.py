@@ -6,7 +6,7 @@ import sched
 from multiprocessing import Process
 import time
 import json
-import urllib2
+import urllib3
 import pyrebase
 import subprocess
 
@@ -52,9 +52,9 @@ class FireAnt:
             sys.exit()
 
         try:
-            REQUEST = urllib2.Request('https://robots.brainyant.com:8080/robotLogin')
+            REQUEST = urllib3.Request('https://robots.brainyant.com:8080/robotLogin')
             REQUEST.add_header('Content-Type', 'application/json')
-            RESPONSE = urllib2.urlopen(REQUEST, json.dumps(AUTH_DATA))
+            RESPONSE = urllib3.urlopen(REQUEST, json.dumps(AUTH_DATA))
             TOKEN = json.loads(RESPONSE.read())['customToken']
             if TOKEN is None:
                 raise TokenRequestError
@@ -87,6 +87,7 @@ class FireAnt:
             camera = self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('profile').child('name').get(token=self.idToken).val()
             secretKey = self.database.child('users').child(self.ownerID).child('cameras').child(camera).child('secretKey').get(token=self.idToken).val()
             streamParam = self.ownerID + '/' + camera + '/' + secretKey
+            print(streamParam)
             subprocess.call(["/BrainyAnt/stream", streamParam])
         except IOError:
             print("Stream start error")
@@ -195,9 +196,9 @@ class FireAnt:
 
     def still_alive(self, scheduler, n_seconds):
         """Send a signal to the server every n seconds"""
-        iamalive = urllib2.Request('https://robots.brainyant.com:8080/iAmAlive')
+        iamalive = urllib3.Request('https://robots.brainyant.com:8080/iAmAlive')
         iamalive.add_header('Content-Type', 'application/json')
-        urllib2.urlopen(iamalive, json.dumps({'robotID': self.robotID}))
+        urllib3.urlopen(iamalive, json.dumps({'robotID': self.robotID}))
         try:
             if self.is_robot_online():
                 scheduler.enter(n_seconds, 1, self.still_alive, (scheduler, n_seconds))
