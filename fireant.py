@@ -51,14 +51,16 @@ class FireAnt:
         except IOError:
             print("Config file not found!")
             sys.exit()
-
+        
         #try:
-        #    payload =  AUTH_DATA
-        #    r = requests.get('https://robots.brainyant.com:8080/robotLogin', params = payload)
+        #    payload =  json.dumps(AUTH_DATA)
+        #    headers = {'Content-Type': 'application/json'}
+        #    r = requests.get('https://robots.brainyant.com:8080/robotLogin', params = payload, headers = headers)
         #    TOKEN = r.json()
         #    print(TOKEN)
         #except TokenRequestError:
         #    print('ERROR getting token')
+
         try:
             REQUEST = urllib2.Request('https://robots.brainyant.com:8080/robotLogin')
             REQUEST.add_header('Content-Type', 'application/json')
