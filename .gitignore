@@ -1,1 +1,3 @@
+.gitignore
 auth.json
+auth.backup
