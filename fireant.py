@@ -112,6 +112,11 @@ class FireAnt:
             print("ERROR: Stream unable to start")
             sys.exit(3)
 
+    def stop_stream(self):
+        """Stop stream"""
+        DIR = os.path.dirname(os.path.realpath(__file__))
+        os.spawnl(os.P_NOWAIT, DIR+'/stream_stop.sh', 'stream_stop.sh')
+
     def get_name(self):
         """Return robot name"""
         name = self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('profile').child('name').get(token=self.idToken).val()
@@ -198,6 +203,7 @@ class FireAnt:
                     'waitTime': None
                 }
             }
+        self.stop_stream()
         self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('queueArchive').update(log_data, token=self.idToken)
         self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('queue').child(self.userEntry).remove(token=self.idToken)
         self.userID = None
