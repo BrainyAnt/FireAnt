@@ -9,7 +9,7 @@ import json
 import urllib2
 import pyrebase
 import subprocess
-import requests
+#import requests
 
 # Exception class definition
 class TokenRequestError(Exception):
@@ -60,7 +60,7 @@ class FireAnt:
         #    print(TOKEN)
         #except TokenRequestError:
         #    print('ERROR getting token')
-
+        
         try:
             REQUEST = urllib2.Request('https://robots.brainyant.com:8080/robotLogin')
             REQUEST.add_header('Content-Type', 'application/json')
@@ -70,6 +70,7 @@ class FireAnt:
                 raise TokenRequestError
         except TokenRequestError:
             print('Error! Could not retreive signin token from server. Server might be down.')
+        
         try:
             USERID = None
             USER_DATA = AUTH.sign_in_with_custom_token(TOKEN)
@@ -92,17 +93,16 @@ class FireAnt:
         p1.start()
 
     def start_stream(self):
+        """Start stream"""
         try:
-            #start stream
             camera = self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('profile').child('stream').get(token=self.idToken).val()
             secretKey = self.database.child('users').child(self.ownerID).child('cameras').child(camera).child('secretKey').get(token=self.idToken).val()
             streamParam = self.ownerID + '/' + camera + '/' + secretKey
             print(streamParam)
             DIR = os.path.dirname(os.path.realpath(__file__))
-            os.spawnl(os.P_NOWAIT, DIR+'/stream.sh', streamParam)
-            subprocess.call(["stream.sh", streamParam])
-        except IOError:
-            print("Stream start error")
+            os.spawnl(os.P_NOWAIT, DIR+'/stream.sh', 'stream.sh', streamParam)
+        except Exception, IOError:
+            print("ERROR: Stream unable to start")
             sys.exit(3)
 
     def get_name(self):

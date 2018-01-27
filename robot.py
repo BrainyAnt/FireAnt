@@ -31,6 +31,7 @@ if __name__ == '__main__':
             while myAnt.get_useron():
                 #get control data
                 controldata = myAnt.get_control_data()
+                print(controldata)
                 
                 #do stuff with control data
                 #check if sensor reading is requested

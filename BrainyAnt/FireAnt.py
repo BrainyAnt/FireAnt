@@ -32,23 +32,11 @@ class FireAnt:
     def __init__(self, authfile):    
         """ Register with firebase using authentication data. Return database reference, toke, and userID """
         
-        FIREBASE_CONFIG = {
-            "apiKey": "AIzaSyDC23ZxJ7YjwVfM0BQ2o6zAtWinFrxCrcI",
-            "authDomain": "brainyant-2e30d.firebaseapp.com",
-            "databaseURL": "https://brainyant-2e30d.firebaseio.com/",
-            "storageBucket": "gs://brainyant-2e30d.appspot.com/"
-        }
-        
-        FIREBASE = pyrebase.initialize_app(FIREBASE_CONFIG)
+        FIREBASE = self.init_firebase()
         AUTH = FIREBASE.auth()
         DB = FIREBASE.database()
         
-        try:
-            DIR = os.path.dirname(os.path.realpath(__file__))
-            AUTH_DATA = json.load(open(DIR + '/' + authfile))
-        except IOError:
-            print("Config file not found!")
-            sys.exit()
+        AUTH_DATA = self.parse_auth_file(authfile)
 
         try:
             REQUEST = urllib2.Request('https://robots.brainyant.com:8080/robotLogin')
@@ -77,6 +65,27 @@ class FireAnt:
         p1 = Process(target = self.start_still_alive_every_n_secs, args = [1])
         p1.start()
 
+    def init_firebase(self):
+        FIREBASE_CONFIG = {
+            "apiKey": "AIzaSyDC23ZxJ7YjwVfM0BQ2o6zAtWinFrxCrcI",
+            "authDomain": "brainyant-2e30d.firebaseapp.com",
+            "databaseURL": "https://brainyant-2e30d.firebaseio.com/",
+            "storageBucket": "gs://brainyant-2e30d.appspot.com/"
+        }
+        
+        my_firebase = pyrebase.initialize_app(FIREBASE_CONFIG)
+        return my_firebase
+
+    def parse_auth_file(self, authfile):
+
+        try:
+            DIR = os.path.dirname(os.path.realpath(__file__))
+            AUTH_DATA = json.load(open(DIR + '/' + authfile))
+        except IOError:
+            print("Config file not found!")
+            sys.exit()
+        return AUTH_DATA
+    
     def get_name(self):
         """Return robot name"""
         name = self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('profile').child('name').get(token=self.idToken).val()
