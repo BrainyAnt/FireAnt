@@ -6,7 +6,7 @@ start_video() {
 }
 
 if [ -z $1 ]; then
-    printf "Usage: $0 <farmItem>"
+    printf "Usage: $0 <secret key>"
 else
   until start_video $1; do
     sleep 1

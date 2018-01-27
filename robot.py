@@ -21,12 +21,15 @@ if __name__ == '__main__':
     try:
         #create a FireAnt object. This registers with the platform and sets the robot online.
         myAnt = FireAnt('auth.json')
-        
+        print(myAnt.is_robot_online())
+        print(myAnt.get_name())
+        print(myAnt.get_description())
         while myAnt.is_robot_online():
             
             #wait for a user to request control
+            print('Waiting for users ...')
             myAnt.wait_for_available_user()
-            
+            print('Got user!')
             #as long as the user is online and in control:
             while myAnt.get_useron():
                 #get control data
@@ -47,6 +50,6 @@ if __name__ == '__main__':
             
             #log session
             myAnt.log_session()
-    
     except KeyboardInterrupt:
+        myAnt.log_session()
         print("Interrupted by master")

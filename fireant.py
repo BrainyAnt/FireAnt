@@ -29,6 +29,8 @@ class FireAnt:
     #robotID
     #userOn
     #userEntry
+    #scheduler
+    #event
 
     #methods
     def __init__(self, authfile):    
@@ -88,20 +90,25 @@ class FireAnt:
         self.robotID = AUTH_DATA["robotID"]
 
         self.start_stream()
-
-        p1 = Process(target = self.start_still_alive_every_n_secs, args = [1])
-        p1.start()
+        print('Action.')
+        try:
+            paraproc = Process(target = self.start_still_alive_every_n_secs, args = [2])
+            paraproc.start()
+        except KeyboardInterrupt:
+            paraproc.join()
+            print('Killed (not still alive)')
 
     def start_stream(self):
         """Start stream"""
         try:
+            print('Lights')
             camera = self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('profile').child('stream').get(token=self.idToken).val()
-            secretKey = self.database.child('users').child(self.ownerID).child('cameras').child(camera).child('secretKey').get(token=self.idToken).val()
-            streamParam = self.ownerID + '/' + camera + '/' + secretKey
-            print(streamParam)
+            secretkey = self.database.child('users').child(self.ownerID).child('cameras').child(camera).child('secretKey').get(token=self.idToken).val()
+            streamparam = self.ownerID + '/' + camera + '/' + secretkey
+            print('Camera')
             DIR = os.path.dirname(os.path.realpath(__file__))
-            os.spawnl(os.P_NOWAIT, DIR+'/stream.sh', 'stream.sh', streamParam)
-        except Exception, IOError:
+            os.spawnl(os.P_NOWAIT, DIR+'/stream.sh', 'stream.sh', streamparam)
+        except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
 
@@ -204,18 +211,22 @@ class FireAnt:
             scheduler.enter(n_seconds, 1, self.still_alive, (scheduler, n_seconds))
             scheduler.run()
         except KeyboardInterrupt:
-            sys.exit(1)
+            for item in scheduler.queue:
+                scheduler.cancel(item)
+            sys.stdout.write('Not still alive!!!')
 
     def still_alive(self, scheduler, n_seconds):
         """Send a signal to the server every n seconds"""
-        iamalive = urllib2.Request('https://robots.brainyant.com:8080/iAmAlive')
-        iamalive.add_header('Content-Type', 'application/json')
-        urllib2.urlopen(iamalive, json.dumps({'robotID': self.robotID}))
         try:
+            iamalive = urllib2.Request('https://robots.brainyant.com:8080/iAmAlive')
+            iamalive.add_header('Content-Type', 'application/json')
+            urllib2.urlopen(iamalive, json.dumps({'robotID': self.robotID}))            
             if self.is_robot_online():
                 scheduler.enter(n_seconds, 1, self.still_alive, (scheduler, n_seconds))
         except KeyboardInterrupt:
-            sys.exit(1)
+            for item in scheduler.queue:
+                scheduler.cancel(item)
+            sys.stdout.write('Not still alive 2!!!')
 
     def wait_for_available_user(self):
         """Wait for user to show up in queue"""
