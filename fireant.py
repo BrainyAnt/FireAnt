@@ -97,8 +97,8 @@ class FireAnt:
 
     def _stop_stream(self):
         """Stop stream"""
-        self._streamproc.terminate()
-        self._streamproc.kill()
+        PID=self._streamproc.pid
+        subprocess.Popen(['kill -9 ' + PID], shell=True)
         print("KILLED STREAM")
 
     def get_name(self):
