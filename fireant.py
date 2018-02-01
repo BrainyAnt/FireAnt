@@ -92,17 +92,13 @@ class FireAnt:
         self.ownerID = AUTH_DATA["ownerID"]
         self.robotID = AUTH_DATA["robotID"]
 
-        self.start_stream()
-        print('Action.')
         print(self.streamPID)
         try:
             self.parathread = Thread(target = self.start_still_alive_every_n_secs, args = [2])
             self.parathread.start()
-            #paraproc = Process(target = self.start_still_alive_every_n_secs, args = [2])
-            #paraproc.start()
+            time.sleep(1)
         except KeyboardInterrupt:
-            self.parathread.join()
-            #paraproc.join()
+            self.parathread.join(5)
             print('Killed (not still alive)')
 
     def start_stream(self):
@@ -116,7 +112,6 @@ class FireAnt:
             DIR = os.path.dirname(os.path.realpath(__file__))
             self.streamproc = subprocess.Popen([DIR+'/stream.sh', streamparam])
             self.streamPID = self.streamproc.pid
-            #os.spawnl(os.P_NOWAIT, DIR+'/stream.sh', 'stream.sh', streamparam)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
@@ -124,8 +119,8 @@ class FireAnt:
     def stop_stream(self):
         """Stop stream"""
         #self.streamproc.kill()
-        subprocess.Popen(['kill -9', self.streamPID])
-        #os.kill(self.streamPID, signal.SIGKILL)
+        #subprocess.Popen(['kill -9', self.streamPID])
+        os.kill(self.streamPID, signal.SIGKILL)
         print("KILLED STREAM")
         #DIR = os.path.dirname(os.path.realpath(__file__))
         #os.spawnl(os.P_NOWAIT, DIR+'/stream_stop.sh', 'stream_stop.sh')
@@ -233,6 +228,7 @@ class FireAnt:
             for item in scheduler.queue:
                 scheduler.cancel(item)
             sys.stdout.write('Not still alive!!!')
+            self.parathread.join(5)
 
     def still_alive(self, scheduler, n_seconds):
         """Send a signal to the server every n seconds"""
@@ -258,10 +254,12 @@ class FireAnt:
                 (u_entry, userid, uon) = self.get_first_user()
         except KeyboardInterrupt:
             print("INTERRUPT!")
-            self.parathread.join()
+            self.parathread.join(5)
             sys.exit(0)
         self.set_robotOn()
         self.set_startControl()
+        self.start_stream()
+        print('Action.')
         return (u_entry, userid, uon)
 
     def publish_data(self, data):
