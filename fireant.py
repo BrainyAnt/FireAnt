@@ -84,7 +84,7 @@ class FireAnt:
             secretkey = self._database.child('users').child(self._ownerID).child('cameras').child(camera).child('secretKey').get(token=self._idToken).val()
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
             path = os.path.dirname(os.path.realpath(__file__))
-            subprocess.Popen([path + '/stream.sh', streamparam], shell=True)
+            self._streamproc = subprocess.Popen([path + '/stream.sh', streamparam])
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
@@ -93,7 +93,8 @@ class FireAnt:
         """Stop stream"""
         #path = os.path.dirname(os.path.realpath(_file_))
         #subprocess.call([path + '/stream_stop.sh'])
-        subprocess.call(['kill', '-9', '$(pgrep raspivid)'], shell=True)
+        subprocess.Popen.kill(self._streamproc)
+        #subprocess.call(['kill', '-9', '$(pgrep raspivid)'], shell=True)
         print("KILLED STREAM")
 
     def get_name(self):
