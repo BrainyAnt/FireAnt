@@ -97,12 +97,8 @@ class FireAnt:
 
     def _stop_stream(self):
         """Stop stream"""
-        #path = os.path.dirname(os.path.realpath(_file_))
-        #subprocess.call([path + '/stream_stop.sh'])
-        #subprocess.Popen.kill(self._streamproc)
-        #self._streamproc.kill()
-        #subprocess.call(['kill', '-9', '$(pgrep raspivid)'], shell=True)
-        os.kill(self._streamproc.pid, signal.SIGINT)
+        self._streamproc.terminate()
+        self._streamproc.kill()
         print("KILLED STREAM")
 
     def get_name(self):
