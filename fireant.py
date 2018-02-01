@@ -83,10 +83,9 @@ class FireAnt:
             camera = self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('profile').child('stream').get(token=self.__idToken).val()
             secretkey = self.__database.child('users').child(self.__ownerID).child('cameras').child(camera).child('secretKey').get(token=self.__idToken).val()
             streamparam = self.__ownerID + '/' + camera + '/' + secretkey
-            #path = os.path.dirname(os.path.realpath(__file__))
-            #streamproc = subprocess.Popen([path + '/stream.sh', streamparam])
-            #subprocess.Popen([path + '/stream.sh', streamparam])
-            subprocess.Popen(['raspivid -w 800 -h 500 -fps 10 -vf -hf -cd MJPEG -t 0 -o - | ffmpeg -loglevel panic -i - -f mpegts -codec:v mpeg1video -s 800x500 -b:v 750k https://robots.brainyant.eu:8080/$1', streamparam])
+            path = os.path.dirname(os.path.realpath(__file__))
+            subprocess.call([path + '/stream.sh', streamparam])
+            #subprocess.call(["raspivid -w 800 -h 500 -fps 10 -vf -hf -cd MJPEG -t 0 -o - | ffmpeg -loglevel panic -i - -f mpegts -codec:v mpeg1video -s 800x500 -b:v 750k https://robots.brainyant.eu:8080/$1", streamparam], shell=True)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
@@ -95,7 +94,7 @@ class FireAnt:
         """Stop stream"""
         #path = os.path.dirname(os.path.realpath(__file__))
         #subprocess.call([path + '/stream_stop.sh'])
-        subprocess.call(['kill -9 `pgrep raspivid`'])
+        subprocess.call(['kill -9 $(pgrep raspivid)'], shell=True)
         print("KILLED STREAM")
 
     def get_name(self):
@@ -208,6 +207,14 @@ class FireAnt:
                 log_timestamp: {
                     'uid': self.__userID,
                     'useTime': log_timestamp - self.__get_startControl(),
+                    'waitTime': None
+                }
+            }
+        except TypeError:
+            log_data = {
+                log_timestamp: {
+                    'uid': self.__userID,
+                    'useTime': None,
                     'waitTime': None
                 }
             }
