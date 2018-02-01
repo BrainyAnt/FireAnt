@@ -7,6 +7,7 @@ from threading import Thread
 import time
 import json
 import urllib2
+import signal
 import subprocess
 import pyrebase
 
