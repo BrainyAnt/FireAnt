@@ -68,6 +68,10 @@ class FireAnt:
         self._idToken = IDTOKEN
         self._ownerID = AUTH_DATA["ownerID"]
         self._robotID = AUTH_DATA["robotID"]
+        self._userEntry = None
+        self._userID = None
+        self._userOn = None
+        self._streamproc = None
 
         try:
             self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [2])
@@ -84,7 +88,7 @@ class FireAnt:
             secretkey = self._database.child('users').child(self._ownerID).child('cameras').child(camera).child('secretKey').get(token=self._idToken).val()
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
             path = os.path.dirname(os.path.realpath(__file__))
-            self._streamproc = subprocess.Popen([path + '/stream.sh', streamparam])
+            self._streamproc = subprocess.Popen(["exec " + path + "/stream.sh", streamparam])
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
