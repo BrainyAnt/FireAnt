@@ -123,7 +123,8 @@ class FireAnt:
 
     def stop_stream(self):
         """Stop stream"""
-        self.streamproc.terminate()
+        self.streamproc.kill()
+        print("KILLED STREAM")
         #DIR = os.path.dirname(os.path.realpath(__file__))
         #os.spawnl(os.P_NOWAIT, DIR+'/stream_stop.sh', 'stream_stop.sh')
 
