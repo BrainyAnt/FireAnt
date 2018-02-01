@@ -21,7 +21,7 @@ class InvalidTokenException(Exception):
 class FireAnt:
     """The BrainyAnt firebase communication class"""
     
-    def _init_(self, authfile):    
+    def __init__(self, authfile):    
         """ Register with firebase using authentication data. Return database reference, toke, and userID """
         
         FIREBASE_CONFIG = {
@@ -84,7 +84,7 @@ class FireAnt:
             secretkey = self._database.child('users').child(self._ownerID).child('cameras').child(camera).child('secretKey').get(token=self._idToken).val()
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
             path = os.path.dirname(os.path.realpath(__file__))
-            subprocess.call([path + '/stream.sh', streamparam])
+            subprocess.Popen([path + '/stream.sh', streamparam], shell=True)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
@@ -93,7 +93,7 @@ class FireAnt:
         """Stop stream"""
         #path = os.path.dirname(os.path.realpath(_file_))
         #subprocess.call([path + '/stream_stop.sh'])
-        subprocess.call(['kill -9 $(pgrep raspivid)'], shell=True)
+        subprocess.call(['kill', '-9', '$(pgrep raspivid)'], shell=True)
         print("KILLED STREAM")
 
     def get_name(self):
@@ -184,12 +184,9 @@ class FireAnt:
         except KeyboardInterrupt:
             print("INTERRUPT!")
             sys.exit(0)
-        self._userEntry = u_entry
-        self._userID = userid
-        self._userOn = uon
-        self._start_stream()
         self._set_robotOn()
         self._set_startControl()
+        self._start_stream()
         return (u_entry, userid, uon)
 
     def log_session(self):
