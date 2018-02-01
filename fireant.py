@@ -8,7 +8,7 @@ from threading import Thread
 import time
 import json
 import urllib2
-from subprocess import call
+import subprocess
 import pyrebase
 
 # Exception class definition
@@ -97,10 +97,8 @@ class FireAnt:
             camera = self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('profile').child('stream').get(token=self.idToken).val()
             secretkey = self.database.child('users').child(self.ownerID).child('cameras').child(camera).child('secretKey').get(token=self.idToken).val()
             streamparam = self.ownerID + '/' + camera + '/' + secretkey
-            
             path = os.path.dirname(os.path.realpath(__file__))
-            call(path+'/stream.sh '+streamparam)
-        
+            streamproc = subprocess.Popen([path + '/stream.sh', streamparam])
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
@@ -108,7 +106,7 @@ class FireAnt:
     def stop_stream(self):
         """Stop stream"""
         path = os.path.dirname(os.path.realpath(__file__))
-        call(path+'/stream_stop.sh')
+        subprocess.call([path + '/stream_stop.sh'])
         print("KILLED STREAM")
 
     def get_name(self):
