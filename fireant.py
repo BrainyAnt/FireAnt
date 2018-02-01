@@ -8,9 +8,8 @@ from threading import Thread
 import time
 import json
 import urllib2
+from subprocess import call
 import pyrebase
-import subprocess, signal
-#import requests
 
 # Exception class definition
 class TokenRequestError(Exception):
@@ -55,17 +54,8 @@ class FireAnt:
             AUTH_DATA = json.load(open(DIR + '/' + authfile))
         except IOError:
             print("Config file not found!")
-            sys.exit()
-        
-        #try:
-        #    payload =  json.dumps(AUTH_DATA)
-        #    headers = {'Content-Type': 'application/json'}
-        #    r = requests.get('https://robots.brainyant.com:8080/robotLogin', params = payload, headers = headers)
-        #    TOKEN = r.json()
-        #    print(TOKEN)
-        #except TokenRequestError:
-        #    print('ERROR getting token')
-        
+            sys.exit(400)
+
         try:
             REQUEST = urllib2.Request('https://robots.brainyant.com:8080/robotLogin')
             REQUEST.add_header('Content-Type', 'application/json')
@@ -75,6 +65,7 @@ class FireAnt:
                 raise TokenRequestError
         except TokenRequestError:
             print('Error! Could not retreive signin token from server. Server might be down.')
+            sys.exit(222)
         
         try:
             USERID = None
@@ -94,32 +85,30 @@ class FireAnt:
 
         try:
             self.parathread = Thread(target = self.start_still_alive_every_n_secs, args = [2])
+            self.parathread.daemon = True
             self.parathread.start()
-            time.sleep(1)
         except KeyboardInterrupt:
-            #self.parathread.join(5)
+            sys.stdout.write("Killed (not still alive) 111")
             print('Killed (not still alive)')
 
     def start_stream(self):
         """Start stream"""
         try:
-            print('Lights')
             camera = self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('profile').child('stream').get(token=self.idToken).val()
             secretkey = self.database.child('users').child(self.ownerID).child('cameras').child(camera).child('secretKey').get(token=self.idToken).val()
             streamparam = self.ownerID + '/' + camera + '/' + secretkey
-            print('Camera')
-            DIR = os.path.dirname(os.path.realpath(__file__))
-            self.streamproc = subprocess.Popen([DIR+'/stream.sh', streamparam])
-            self.streamPID = self.streamproc.pid
+            
+            path = os.path.dirname(os.path.realpath(__file__))
+            call(path+'/stream.sh '+streamparam)
+        
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
 
     def stop_stream(self):
         """Stop stream"""
-        #os.kill(self.streamPID, signal.SIGKILL)
-        DIR = os.path.dirname(os.path.realpath(__file__))
-        os.spawnl(os.P_NOWAIT, DIR+'/stream_stop.sh', 'stream_stop.sh')
+        path = os.path.dirname(os.path.realpath(__file__))
+        call(path+'/stream_stop.sh')
         print("KILLED STREAM")
 
     def get_name(self):
@@ -166,7 +155,16 @@ class FireAnt:
                 useron = i.val()['userOn']
         except KeyboardInterrupt:
             sys.exit(2)
+        except KeyError:
+            print("Missing field: userOn")
+            self.delete_entry()
+            useron = False
         return useron
+
+    def delete_entry(self):
+        """Delete bad entry in database"""
+        print('deleting bad entry ...')
+        self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('queue').child(self.userEntry).remove(token=self.idToken)
 
     def get_control_data(self):
         """Return ControlData values from firebase"""
@@ -188,6 +186,24 @@ class FireAnt:
     def get_startControl(self):
         """Return timestamp for start of control session"""
         return self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('queue').child(self.userEntry).child('startControl').get(token=self.idToken).val()
+
+    def wait_for_available_user(self):
+        """Wait for user to show up in queue"""
+        # Get UID
+        try:
+            u_entry = None
+            userid = None
+            uon = None
+            while self.is_robot_online() and userid is None and uon is None:
+                (u_entry, userid, uon) = self.get_first_user()
+        except KeyboardInterrupt:
+            print("INTERRUPT!")
+            sys.exit(0)
+
+        self.start_stream()
+        self.set_robotOn()
+        self.set_startControl()
+        return (u_entry, userid, uon)
 
     def log_session(self):
         """Log a session to archive after it is over"""
@@ -224,8 +240,8 @@ class FireAnt:
         except KeyboardInterrupt:
             for item in scheduler.queue:
                 scheduler.cancel(item)
-            sys.stdout.write('Not still alive!!!')
-            #self.parathread.join(5)
+            #sys.stdout.write('Not still alive!!!')
+            print('Not still alive!!!')
 
     def still_alive(self, scheduler, n_seconds):
         """Send a signal to the server every n seconds"""
@@ -240,25 +256,6 @@ class FireAnt:
                 scheduler.cancel(item)
             sys.stdout.write('Not still alive 2!!!')
 
-    def wait_for_available_user(self):
-        """Wait for user to show up in queue"""
-        # Get UID
-        try:
-            u_entry = None
-            userid = None
-            uon = None
-            while self.is_robot_online() and userid is None and uon is None:
-                (u_entry, userid, uon) = self.get_first_user()
-        except KeyboardInterrupt:
-            print("INTERRUPT!")
-            #self.parathread.join(5)
-            sys.exit(0)
-        self.set_robotOn()
-        self.set_startControl()
-        self.start_stream()
-        print('Action.')
-        return (u_entry, userid, uon)
-
     def publish_data(self, data):
         """Publish data to database"""
         sensor_name = data[0]
@@ -268,6 +265,7 @@ class FireAnt:
         self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('users').child(self.userID).child("ControlData").child("sensors").child(sensor_name).update({'value': sensor_value}, token=self.idToken)
 
     def get_sensor_request(self, sensor):
+        """Return sensor request"""
         try:
             return self.database.child('users').child(self.ownerID).child('robots').child(self.robotID).child('users').child(self.userID).child("ControlData").child("sensors").child(sensor).child('request').get(token=self.idToken).val()
         except TypeError:
