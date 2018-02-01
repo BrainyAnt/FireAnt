@@ -96,12 +96,12 @@ class FireAnt:
         print('Action.')
         print(self.streamPID)
         try:
-            parathread = Thread(target = self.start_still_alive_every_n_secs, args = [2])
-            parathread.start()
+            self.parathread = Thread(target = self.start_still_alive_every_n_secs, args = [2])
+            self.parathread.start()
             #paraproc = Process(target = self.start_still_alive_every_n_secs, args = [2])
             #paraproc.start()
         except KeyboardInterrupt:
-            parathread.join()
+            self.parathread.join()
             #paraproc.join()
             print('Killed (not still alive)')
 
@@ -123,7 +123,9 @@ class FireAnt:
 
     def stop_stream(self):
         """Stop stream"""
-        self.streamproc.kill()
+        #self.streamproc.kill()
+        subprocess.Popen(['kill -9', self.streamPID])
+        #os.kill(self.streamPID, signal.SIGKILL)
         print("KILLED STREAM")
         #DIR = os.path.dirname(os.path.realpath(__file__))
         #os.spawnl(os.P_NOWAIT, DIR+'/stream_stop.sh', 'stream_stop.sh')
@@ -256,6 +258,7 @@ class FireAnt:
                 (u_entry, userid, uon) = self.get_first_user()
         except KeyboardInterrupt:
             print("INTERRUPT!")
+            self.parathread.join()
             sys.exit(0)
         self.set_robotOn()
         self.set_startControl()
