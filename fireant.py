@@ -92,13 +92,12 @@ class FireAnt:
         self.ownerID = AUTH_DATA["ownerID"]
         self.robotID = AUTH_DATA["robotID"]
 
-        print(self.streamPID)
         try:
             self.parathread = Thread(target = self.start_still_alive_every_n_secs, args = [2])
             self.parathread.start()
             time.sleep(1)
         except KeyboardInterrupt:
-            self.parathread.join(5)
+            #self.parathread.join(5)
             print('Killed (not still alive)')
 
     def start_stream(self):
@@ -118,12 +117,10 @@ class FireAnt:
 
     def stop_stream(self):
         """Stop stream"""
-        #self.streamproc.kill()
-        #subprocess.Popen(['kill -9', self.streamPID])
-        os.kill(self.streamPID, signal.SIGKILL)
+        #os.kill(self.streamPID, signal.SIGKILL)
+        DIR = os.path.dirname(os.path.realpath(__file__))
+        os.spawnl(os.P_NOWAIT, DIR+'/stream_stop.sh', 'stream_stop.sh')
         print("KILLED STREAM")
-        #DIR = os.path.dirname(os.path.realpath(__file__))
-        #os.spawnl(os.P_NOWAIT, DIR+'/stream_stop.sh', 'stream_stop.sh')
 
     def get_name(self):
         """Return robot name"""
@@ -228,7 +225,7 @@ class FireAnt:
             for item in scheduler.queue:
                 scheduler.cancel(item)
             sys.stdout.write('Not still alive!!!')
-            self.parathread.join(5)
+            #self.parathread.join(5)
 
     def still_alive(self, scheduler, n_seconds):
         """Send a signal to the server every n seconds"""
@@ -254,7 +251,7 @@ class FireAnt:
                 (u_entry, userid, uon) = self.get_first_user()
         except KeyboardInterrupt:
             print("INTERRUPT!")
-            self.parathread.join(5)
+            #self.parathread.join(5)
             sys.exit(0)
         self.set_robotOn()
         self.set_startControl()
