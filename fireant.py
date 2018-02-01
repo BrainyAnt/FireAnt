@@ -21,7 +21,7 @@ class InvalidTokenException(Exception):
 class FireAnt:
     """The BrainyAnt firebase communication class"""
     
-    def __init__(self, authfile):    
+    def _init_(self, authfile):    
         """ Register with firebase using authentication data. Return database reference, toke, and userID """
         
         FIREBASE_CONFIG = {
@@ -64,114 +64,113 @@ class FireAnt:
         except InvalidTokenException:
             print("Can't sign in to firebase. Invalid token.")
 
-        self.__database = DB
-        self.__idToken = IDTOKEN
-        self.__ownerID = AUTH_DATA["ownerID"]
-        self.__robotID = AUTH_DATA["robotID"]
+        self._database = DB
+        self._idToken = IDTOKEN
+        self._ownerID = AUTH_DATA["ownerID"]
+        self._robotID = AUTH_DATA["robotID"]
 
         try:
-            self.__parathread = Thread(target = self.__start_still_alive_every_n_secs, args = [2])
-            self.__parathread.daemon = True
-            self.__parathread.start()
+            self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [2])
+            self._parathread.daemon = True
+            self._parathread.start()
         except KeyboardInterrupt:
             sys.stdout.write("Killed (not still alive) 111")
             print('Killed (not still alive)')
 
-    def __start_stream(self):
+    def _start_stream(self):
         """Start stream"""
         try:
-            camera = self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('profile').child('stream').get(token=self.__idToken).val()
-            secretkey = self.__database.child('users').child(self.__ownerID).child('cameras').child(camera).child('secretKey').get(token=self.__idToken).val()
-            streamparam = self.__ownerID + '/' + camera + '/' + secretkey
+            camera = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('profile').child('stream').get(token=self._idToken).val()
+            secretkey = self._database.child('users').child(self._ownerID).child('cameras').child(camera).child('secretKey').get(token=self._idToken).val()
+            streamparam = self._ownerID + '/' + camera + '/' + secretkey
             path = os.path.dirname(os.path.realpath(__file__))
             subprocess.call([path + '/stream.sh', streamparam])
-            #subprocess.call(["raspivid -w 800 -h 500 -fps 10 -vf -hf -cd MJPEG -t 0 -o - | ffmpeg -loglevel panic -i - -f mpegts -codec:v mpeg1video -s 800x500 -b:v 750k https://robots.brainyant.eu:8080/$1", streamparam], shell=True)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
 
-    def __stop_stream(self):
+    def _stop_stream(self):
         """Stop stream"""
-        #path = os.path.dirname(os.path.realpath(__file__))
+        #path = os.path.dirname(os.path.realpath(_file_))
         #subprocess.call([path + '/stream_stop.sh'])
         subprocess.call(['kill -9 $(pgrep raspivid)'], shell=True)
         print("KILLED STREAM")
 
     def get_name(self):
         """Return robot name"""
-        name = self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('profile').child('name').get(token=self.__idToken).val()
+        name = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('profile').child('name').get(token=self._idToken).val()
         return name
 
     def get_description(self):
         """Return robot description"""
-        description = self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('profile').child('description').get(token=self.__idToken).val()
+        description = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('profile').child('description').get(token=self._idToken).val()
         return description
         
-    def __set_robot_offline(self):
+    def _set_robot_offline(self):
         """Set field value of isOnline to False"""
-        self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('profile').update({'isOnline': False}, token=self.__idToken)
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('profile').update({'isOnline': False}, token=self._idToken)
 
     def is_robot_online(self):
         """Return field value of isOnline"""
-        return self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('profile').child('isOnline').get(token=self.__idToken).val()
+        return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('profile').child('isOnline').get(token=self._idToken).val()
 
-    def __get_first_user(self):
+    def _get_first_user(self):
         """Get first user information"""
         (uid, useron, user_entry) = (None, None, None)
-        firstuser = self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('queue').order_by_key().limit_to_first(1).get(token=self.__idToken)
+        firstuser = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').order_by_key().limit_to_first(1).get(token=self._idToken)
         try:
             for i in firstuser.each():
                 uid = i.val()['uid']
                 useron = i.val()['userOn']
                 user_entry = i.key()
         except TypeError:
-            self.__userID = None
-            self.__userOn = None
-            self.__userEntry = None
-        self.__userID = uid
-        self.__userOn = useron
-        self.__userEntry = user_entry
+            self._userID = None
+            self._userOn = None
+            self._userEntry = None
+        self._userID = uid
+        self._userOn = useron
+        self._userEntry = user_entry
         return (user_entry, uid, useron)
 
     def get_useron(self):
         """Get first user status"""
         try:
-            aux = self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('queue').order_by_key().limit_to_first(1).get(token=self.__idToken)
+            aux = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').order_by_key().limit_to_first(1).get(token=self._idToken)
             for i in aux.each():
                 useron = i.val()['userOn']
         except KeyboardInterrupt:
             sys.exit(2)
         except KeyError:
             print("Missing field: userOn")
-            self.__delete_entry()
+            self._delete_entry()
             useron = False
         return useron
 
-    def __delete_entry(self):
+    def _delete_entry(self):
         """Delete bad entry in database"""
         print('deleting bad entry ...')
-        self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('queue').child(self.__userEntry).remove(token=self.__idToken)
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).remove(token=self._idToken)
 
     def get_control_data(self):
         """Return ControlData values from firebase"""
-        user_id = self.__get_first_user()[1]
+        user_id = self._get_first_user()[1]
         try:
-            return self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('users').child(user_id).child("ControlData").order_by_key().get(token=self.__idToken).val()
+            return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(user_id).child("ControlData").order_by_key().get(token=self._idToken).val()
         except TypeError:
             return None
     
-    def __set_robotOn(self):
+    def _set_robotOn(self):
         """Set robotOn flag to True"""
-        self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('queue').child(self.__userEntry).update({"robotOn": True}, token=self.__idToken)
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).update({"robotOn": True}, token=self._idToken)
 
-    def __set_startControl(self):
+    def _set_startControl(self):
         """Record timestamp when control session starts"""
         timestamp = int(round(time.time()*1000)) #calendar.timegm(time.gmtime())
-        self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('queue').child(self.__userEntry).update({"startControl": timestamp}, token=self.__idToken)
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).update({"startControl": timestamp}, token=self._idToken)
 
-    def __get_startControl(self):
+    def _get_startControl(self):
         """Return timestamp for start of control session"""
-        return self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('queue').child(self.__userEntry).child('startControl').get(token=self.__idToken).val()
+        return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).child('startControl').get(token=self._idToken).val()
 
     def wait_for_available_user(self):
         """Wait for user to show up in queue"""
@@ -181,16 +180,16 @@ class FireAnt:
             userid = None
             uon = None
             while self.is_robot_online() and userid is None and uon is None:
-                (u_entry, userid, uon) = self.__get_first_user()
+                (u_entry, userid, uon) = self._get_first_user()
         except KeyboardInterrupt:
             print("INTERRUPT!")
             sys.exit(0)
-        self.__userEntry = u_entry
-        self.__userID = userid
-        self.__userOn = uon
-        self.__start_stream()
-        self.__set_robotOn()
-        self.__set_startControl()
+        self._userEntry = u_entry
+        self._userID = userid
+        self._userOn = uon
+        self._start_stream()
+        self._set_robotOn()
+        self._set_startControl()
         return (u_entry, userid, uon)
 
     def log_session(self):
@@ -199,39 +198,39 @@ class FireAnt:
         try:
             log_data = {
                 log_timestamp: {
-                    'uid': self.__userID,
-                    'useTime': log_timestamp - self.__get_startControl(),
-                    'waitTime': self.__get_startControl() - int(self.__userEntry)
+                    'uid': self._userID,
+                    'useTime': log_timestamp - self._get_startControl(),
+                    'waitTime': self._get_startControl() - int(self._userEntry)
                 }
             }
         except ValueError:
             log_data = {
                 log_timestamp: {
-                    'uid': self.__userID,
-                    'useTime': log_timestamp - self.__get_startControl(),
+                    'uid': self._userID,
+                    'useTime': log_timestamp - self._get_startControl(),
                     'waitTime': None
                 }
             }
         except TypeError:
             log_data = {
                 log_timestamp: {
-                    'uid': self.__userID,
+                    'uid': self._userID,
                     'useTime': None,
                     'waitTime': None
                 }
             }
-        self.__stop_stream()
-        self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('queueArchive').update(log_data, token=self.__idToken)
-        self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('queue').child(self.__userEntry).remove(token=self.__idToken)
-        self.__userID = None
-        self.__userEntry = None
-        self.__userOn = None
+        self._stop_stream()
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queueArchive').update(log_data, token=self._idToken)
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).remove(token=self._idToken)
+        self._userID = None
+        self._userEntry = None
+        self._userOn = None
 
-    def __start_still_alive_every_n_secs(self, n_seconds):
+    def _start_still_alive_every_n_secs(self, n_seconds):
         """Start a recurring function that signals the robot is online every n seconds"""
         try:
             scheduler = sched.scheduler(time.time, time.sleep)
-            scheduler.enter(n_seconds, 1, self.__still_alive, (scheduler, n_seconds))
+            scheduler.enter(n_seconds, 1, self._still_alive, (scheduler, n_seconds))
             scheduler.run()
         except KeyboardInterrupt:
             for item in scheduler.queue:
@@ -239,14 +238,14 @@ class FireAnt:
             #sys.stdout.write('Not still alive!!!')
             print('Not still alive!!!')
 
-    def __still_alive(self, scheduler, n_seconds):
+    def _still_alive(self, scheduler, n_seconds):
         """Send a signal to the server every n seconds"""
         try:
             iamalive = urllib2.Request('https://robots.brainyant.com:8080/iAmAlive')
             iamalive.add_header('Content-Type', 'application/json')
-            urllib2.urlopen(iamalive, json.dumps({'robotID': self.__robotID}))            
+            urllib2.urlopen(iamalive, json.dumps({'robotID': self._robotID}))            
             if self.is_robot_online(): #there is a problem here with SSL. 
-                scheduler.enter(n_seconds, 1, self.__still_alive, (scheduler, n_seconds))
+                scheduler.enter(n_seconds, 1, self._still_alive, (scheduler, n_seconds))
         except KeyboardInterrupt:
             for item in scheduler.queue:
                 scheduler.cancel(item)
@@ -257,14 +256,14 @@ class FireAnt:
         sensor_name = data[0]
         sensor_value = data[1]
         sensor_request = data[2]
-        self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('users').child(self.__userID).child("ControlData").child("sensors").child(sensor_name).update({'request': sensor_request}, token=self.__idToken)
-        self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('users').child(self.__userID).child("ControlData").child("sensors").child(sensor_name).update({'value': sensor_value}, token=self.__idToken)
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child("sensors").child(sensor_name).update({'request': sensor_request}, token=self._idToken)
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child("sensors").child(sensor_name).update({'value': sensor_value}, token=self._idToken)
 
     def get_sensor_request(self, sensor):
         """Return sensor request"""
         try:
-            return self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('users').child(self.__userID).child("ControlData").child("sensors").child(sensor).child('request').get(token=self.__idToken).val()
+            return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child("sensors").child(sensor).child('request').get(token=self._idToken).val()
         except TypeError:
-            self.__database.child('users').child(self.__ownerID).child('robots').child(self.__robotID).child('users').child(self.__userID).child("ControlData").child("sensors").child(sensor).update({'request': False}, token=self.__idToken)
+            self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child("sensors").child(sensor).update({'request': False}, token=self._idToken)
             print('Sensor might not be registered')
             return False
