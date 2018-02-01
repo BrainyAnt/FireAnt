@@ -89,7 +89,7 @@ class FireAnt:
         self.ownerID = AUTH_DATA["ownerID"]
         self.robotID = AUTH_DATA["robotID"]
 
-        self.start_stream()
+        #self.start_stream()
         print('Action.')
         try:
             paraproc = Process(target = self.start_still_alive_every_n_secs, args = [2])
@@ -227,7 +227,7 @@ class FireAnt:
             iamalive = urllib2.Request('https://robots.brainyant.com:8080/iAmAlive')
             iamalive.add_header('Content-Type', 'application/json')
             urllib2.urlopen(iamalive, json.dumps({'robotID': self.robotID}))            
-            if self.is_robot_online():
+            if self.is_robot_online(): #there is a problem here with SSL. 
                 scheduler.enter(n_seconds, 1, self.still_alive, (scheduler, n_seconds))
         except KeyboardInterrupt:
             for item in scheduler.queue:

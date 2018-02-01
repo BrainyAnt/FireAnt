@@ -2,6 +2,7 @@
 
 # Import modules. 
 from fireant import FireAnt
+import random
 
 # User implemented functions
 
@@ -14,7 +15,7 @@ def readSensor1():
     return 100
 
 def readSensor2():
-    return 'a reading'
+    return random.randint(1,501)
 
 # main part
 if __name__ == '__main__':
