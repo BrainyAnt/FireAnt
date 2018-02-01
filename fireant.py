@@ -9,6 +9,7 @@ import time
 import json
 import urllib2
 import pyrebase
+import subprocess, signal
 #import requests
 
 # Exception class definition
@@ -31,6 +32,8 @@ class FireAnt:
     #userEntry
     #scheduler
     #event
+    #streamproc
+    #streamPID
 
     #methods
     def __init__(self, authfile):    
@@ -89,8 +92,9 @@ class FireAnt:
         self.ownerID = AUTH_DATA["ownerID"]
         self.robotID = AUTH_DATA["robotID"]
 
-        #self.start_stream()
+        self.start_stream()
         print('Action.')
+        print(self.streamPID)
         try:
             parathread = Thread(target = self.start_still_alive_every_n_secs, args = [2])
             parathread.start()
@@ -110,15 +114,18 @@ class FireAnt:
             streamparam = self.ownerID + '/' + camera + '/' + secretkey
             print('Camera')
             DIR = os.path.dirname(os.path.realpath(__file__))
-            os.spawnl(os.P_NOWAIT, DIR+'/stream.sh', 'stream.sh', streamparam)
+            self.streamproc = subprocess.Popen([DIR+'/stream.sh', streamparam])
+            self.streamPID = self.streamproc.pid
+            #os.spawnl(os.P_NOWAIT, DIR+'/stream.sh', 'stream.sh', streamparam)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
 
     def stop_stream(self):
         """Stop stream"""
-        DIR = os.path.dirname(os.path.realpath(__file__))
-        os.spawnl(os.P_NOWAIT, DIR+'/stream_stop.sh', 'stream_stop.sh')
+        self.streamproc.terminate()
+        #DIR = os.path.dirname(os.path.realpath(__file__))
+        #os.spawnl(os.P_NOWAIT, DIR+'/stream_stop.sh', 'stream_stop.sh')
 
     def get_name(self):
         """Return robot name"""
@@ -244,7 +251,7 @@ class FireAnt:
             u_entry = None
             userid = None
             uon = None
-            while userid is None and uon is None:
+            while self.is_robot_online() and userid is None and uon is None:
                 (u_entry, userid, uon) = self.get_first_user()
         except KeyboardInterrupt:
             print("INTERRUPT!")
