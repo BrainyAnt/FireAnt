@@ -3,12 +3,12 @@
 import os
 import sys
 import sched
-from multiprocessing import Process
+#from multiprocessing import Process
+from threading import Thread
 import time
 import json
 import urllib2
 import pyrebase
-import subprocess
 #import requests
 
 # Exception class definition
@@ -92,10 +92,13 @@ class FireAnt:
         #self.start_stream()
         print('Action.')
         try:
-            paraproc = Process(target = self.start_still_alive_every_n_secs, args = [2])
-            paraproc.start()
+            parathread = Thread(target = self.start_still_alive_every_n_secs, args = [2])
+            parathread.start()
+            #paraproc = Process(target = self.start_still_alive_every_n_secs, args = [2])
+            #paraproc.start()
         except KeyboardInterrupt:
-            paraproc.join()
+            parathread.join()
+            #paraproc.join()
             print('Killed (not still alive)')
 
     def start_stream(self):
