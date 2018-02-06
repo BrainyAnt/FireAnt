@@ -73,6 +73,7 @@ class FireAnt:
         self._userID = None
         self._userOn = None
         self._streamproc = None
+	self.my_stream = None
 
         try:
             self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [2])
@@ -90,15 +91,15 @@ class FireAnt:
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
             path = os.path.dirname(os.path.realpath(__file__))
             cmd = path + '/stream.sh' + ' ' + streamparam
-            self._streamproc = subprocess.Popen(cmd, shell=True)
+            #self._streamproc = subprocess.Popen(cmd, shell=True)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
 
     def _stop_stream(self):
         """Stop stream"""
-        PID=self._streamproc.pid
-        subprocess.Popen(['kill -9 ' + PID], shell=True)
+        #PID=self._streamproc.pid
+        #subprocess.Popen(['kill -9 ' + PID], shell=True)
         print("KILLED STREAM")
 
     def get_name(self):
@@ -129,9 +130,7 @@ class FireAnt:
                 useron = i.val()['userOn']
                 user_entry = i.key()
         except TypeError:
-            self._userID = None
-            self._userOn = None
-            self._userEntry = None
+            (uid, useron, user_entry) = (None, None, None)
         self._userID = uid
         self._userOn = useron
         self._userEntry = user_entry
@@ -143,7 +142,10 @@ class FireAnt:
             aux = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').order_by_key().limit_to_first(1).get(token=self._idToken)
             for i in aux.each():
                 useron = i.val()['userOn']
-        except KeyboardInterrupt:
+        except TypeError:
+	    print("No user in queue")
+	    useron = False
+	except KeyboardInterrupt:
             sys.exit(2)
         except KeyError:
             print("Missing field: userOn")
@@ -163,6 +165,16 @@ class FireAnt:
             return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(user_id).child("ControlData").order_by_key().get(token=self._idToken).val()
         except TypeError:
             return None
+
+    def stream_control_data(self, mycallback):
+        self.my_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").stream(mycallback, stream_id="control data stream", token=self._idToken)
+
+    def stream_handler(self, message):
+        print(message)
+
+    def close_stream(self):
+        if self.my_stream:
+            self.my_stream.close()
     
     def _set_robotOn(self):
         """Set robotOn flag to True"""
@@ -184,7 +196,7 @@ class FireAnt:
             u_entry = None
             userid = None
             uon = None
-            while self.is_robot_online() and userid is None and uon is None:
+            while userid is None and uon is None:
                 (u_entry, userid, uon) = self._get_first_user()
         except KeyboardInterrupt:
             print("INTERRUPT!")
@@ -222,6 +234,7 @@ class FireAnt:
                 }
             }
         self._stop_stream()
+        self.close_stream()
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queueArchive').update(log_data, token=self._idToken)
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).remove(token=self._idToken)
         self._userID = None
@@ -245,7 +258,7 @@ class FireAnt:
         try:
             iamalive = urllib2.Request('https://robots.brainyant.com:8080/iAmAlive')
             iamalive.add_header('Content-Type', 'application/json')
-            urllib2.urlopen(iamalive, json.dumps({'robotID': self._robotID}))            
+            urllib2.urlopen(iamalive, json.dumps({'ownerID': self._ownerID, 'robotID': self._robotID}))            
             if self.is_robot_online(): #there is a problem here with SSL. 
                 scheduler.enter(n_seconds, 1, self._still_alive, (scheduler, n_seconds))
         except KeyboardInterrupt:
