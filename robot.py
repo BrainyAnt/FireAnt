@@ -2,9 +2,34 @@
 import time
 import random
 from fireant import FireAnt
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+
+headlight = 17
+GPIO.setup(headlight, GPIO.OUT)
 
 def userFunction(message):
-    print(message)
+    print(message["data"])
+    try:
+        print(message["data"]["fwd"])
+    except Exception:
+        pass
+    if str(type(message["data"])) == "<type 'dict'>":
+        if "fwd" in message["data"]:
+            if message["data"]["fwd"]>0:
+                GPIO.output(headlight, GPIO.HIGH)
+            else:
+                GPIO.output(headlight, GPIO.LOW)
+    elif str(type(message["data"])) == "<type 'int'>":
+        if message["path"] == "fwd":
+            if message["data"] > 1:
+                GPIO.output(headlight, GPIO.HIGH)
+            else:
+                GPIO.output(headlight, GPIO.LOW)
+
+
 
 def readSensor1():
     #get sensor data
@@ -12,7 +37,7 @@ def readSensor1():
 
 if __name__ == '__main__':
     try:
-        myAnt = FireAnt('auth.json')
+        myAnt = FireAnt('testrobot.json')
         
         print(myAnt.is_robot_online())
         print(myAnt.get_name())
