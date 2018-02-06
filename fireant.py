@@ -91,15 +91,17 @@ class FireAnt:
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
             path = os.path.dirname(os.path.realpath(__file__))
             cmd = path + '/stream.sh' + ' ' + streamparam
-            #self._streamproc = subprocess.Popen(cmd, shell=True)
+            self._streamproc = subprocess.Popen(cmd, shell=True)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
 
     def _stop_stream(self):
         """Stop stream"""
-        #PID=self._streamproc.pid
-        #subprocess.Popen(['kill -9 ' + PID], shell=True)
+        PID=self._streamproc.pid
+        print(PID)
+        #subprocess.Popen(['kill -9 ' + str(PID)], shell=True)
+        subprocess.Popen(['kill -9 $(pgrep raspivid)'], shell=True)
         print("KILLED STREAM")
 
     def get_name(self):
@@ -173,8 +175,11 @@ class FireAnt:
         print(message)
 
     def close_stream(self):
-        if self.my_stream:
-            self.my_stream.close()
+        try:
+            if self.my_stream:
+                self.my_stream.close()
+        except AttributeError:
+            print('There is no spoon')
     
     def _set_robotOn(self):
         """Set robotOn flag to True"""
