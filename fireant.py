@@ -206,6 +206,7 @@ class FireAnt:
             print("INTERRUPT!")
             self._stop_stream()
             sys.exit(0)
+        
         self._set_robotOn()
         self._set_startControl()
         self._start_stream()
@@ -238,10 +239,10 @@ class FireAnt:
                     'waitTime': None
                 }
             }
-        self._stop_stream()
         self.close_stream()
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queueArchive').update(log_data, token=self._idToken)
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).remove(token=self._idToken)
+        self._stop_stream()
         self._userID = None
         self._userEntry = None
         self._userOn = None
@@ -270,6 +271,7 @@ class FireAnt:
             for item in scheduler.queue:
                 scheduler.cancel(item)
             sys.stdout.write('Not still alive 2!!!')
+            sys.exit(10)
 
     def publish_data(self, data):
         """Publish data to database"""
