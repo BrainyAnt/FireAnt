@@ -204,7 +204,6 @@ class FireAnt:
                 (u_entry, userid, uon) = self._get_first_user()
         except KeyboardInterrupt:
             print("INTERRUPT!")
-            self._stop_stream()
             sys.exit(0)
         
         self._set_robotOn()
