@@ -98,13 +98,10 @@ class FireAnt:
 
     def _stop_stream(self):
         """Stop stream"""
-        #PID=self._streamproc.pid
-        #print(PID)
-        #subprocess.Popen(['kill -9 ' + str(PID)], shell=True)
-        #subprocess.Popen(['kill -9 $(pgrep raspivid)'], shell=True)
         path = os.path.dirname(os.path.realpath(__file__))
-        subprocess.Popen([path+'/stream_stop.sh'], shell=True)
-        print("KILLED STREAM")
+        cmd = path + '/stream_stop.sh'
+        subprocess.Popen(cmd, shell=True)
+        #print("KILLED STREAM")
 
     def get_name(self):
         """Return robot name"""
@@ -207,8 +204,8 @@ class FireAnt:
                 (u_entry, userid, uon) = self._get_first_user()
         except KeyboardInterrupt:
             print("INTERRUPT!")
-            self._stop_stream()
             sys.exit(0)
+        
         self._set_robotOn()
         self._set_startControl()
         self._start_stream()
@@ -241,10 +238,10 @@ class FireAnt:
                     'waitTime': None
                 }
             }
-        self._stop_stream()
         self.close_stream()
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queueArchive').update(log_data, token=self._idToken)
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).remove(token=self._idToken)
+        self._stop_stream()
         self._userID = None
         self._userEntry = None
         self._userOn = None
@@ -273,6 +270,7 @@ class FireAnt:
             for item in scheduler.queue:
                 scheduler.cancel(item)
             sys.stdout.write('Not still alive 2!!!')
+            sys.exit(10)
 
     def publish_data(self, data):
         """Publish data to database"""
