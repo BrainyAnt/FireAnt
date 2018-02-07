@@ -5,8 +5,6 @@ Use this to build your own robot and code the funcionality you desire.
 
 ## Prerequisites
 
----
-
 ### Hardware
 
 1. Raspberry Pi v3.0
@@ -19,8 +17,6 @@ Use this to build your own robot and code the funcionality you desire.
 2. Python 2.7
 
 ## Installation
-
----
 
 1. Install Raspbian [Stretch](https://www.raspberrypi.org/downloads/raspbian/) OS on a microSD card
 2. Connect Raspberry Pi to WiFi network ( [how to guide](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md "SETTING WIFI UP VIA THE COMMAND LINE") )
@@ -40,8 +36,6 @@ Use this to build your own robot and code the funcionality you desire.
 
 ## Usage
 
----
-
 1. Sign in or regster on [BrainyAnt](http://www.brainyant.com "Robots.Unite")
 2. Create a new robot entry for your Raspberry Pi
 3. Download the __auth.json__ file
@@ -50,7 +44,5 @@ Use this to build your own robot and code the funcionality you desire.
 6. Run robot.py: `python robot.py` or simply `./robot.py`
 
 ## Feedback
-
----
 
 Give us feedback, inform us of any issues or troubleshooting. [Contact](http://www.brainyant.com/contact) us or send us an email at *contact@brainyant.com*
