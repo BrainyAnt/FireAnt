@@ -1,51 +1,62 @@
 #!/usr/bin/env python
-
-# Import modules. 
+import time
+import random
 from fireant import FireAnt
+import RPi.GPIO as GPIO
 
-# User implemented functions
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
 
-def userFunctions(args):
-    #do stuff
-    value = args
-    return value
+headlight = 17
+GPIO.setup(headlight, GPIO.OUT)
+
+def userFunction(message):
+    print(message["data"])
+    try:
+        print(message["data"]["fwd"])
+    except Exception:
+        pass
+    if str(type(message["data"])) == "<type 'dict'>":
+        if "fwd" in message["data"]:
+            if message["data"]["fwd"]>0:
+                GPIO.output(headlight, GPIO.HIGH)
+            else:
+                GPIO.output(headlight, GPIO.LOW)
+    elif str(type(message["data"])) == "<type 'int'>":
+        if message["path"] == "fwd":
+            if message["data"] > 1:
+                GPIO.output(headlight, GPIO.HIGH)
+            else:
+                GPIO.output(headlight, GPIO.LOW)
+
+
 
 def readSensor1():
-    return 100
+    #get sensor data
+    return random.randint(1,501)
 
-def readSensor2():
-    return 'a reading'
-
-# main part
 if __name__ == '__main__':
     try:
-        #create a FireAnt object. This registers with the platform and sets the robot online.
-        myAnt = FireAnt('auth.json')
+        myAnt = FireAnt('testrobot.json')
         
-        while myAnt.is_robot_online():
-            
-            #wait for a user to request control
+        print(myAnt.is_robot_online())
+        print(myAnt.get_name())
+        print(myAnt.get_description())
+        
+        while True:
+            print('Waiting for users ...')
             myAnt.wait_for_available_user()
+            print('Got user!')
             
-            #as long as the user is online and in control:
+            myAnt.stream_control_data(userFunction) 
+            
             while myAnt.get_useron():
-                #get control data
-                controldata = myAnt.get_control_data()
-                
-                #do stuff with control data
-                #check if sensor reading is requested
-                request1 = myAnt.get_sensor_request('sensor1')
-                request2 = myAnt.get_sensor_request('sensor_2')
-                
-                #send sensor reading
-                if request1:
-                    reading = readSensor1()
-                    myAnt.publish_data( ("sensor1", reading, False) )
-                if request2:
-                    myAnt.publish_data(("sensor_2", readSensor2(), True))
+    	        myAnt.publish_data(("sensor", random.randint(1,100), True))
+    	        time.sleep(random.randint(1,10))
             
-            #log session
+            myAnt.close_stream()
             myAnt.log_session()
-    
+
     except KeyboardInterrupt:
+        myAnt.log_session()
         print("Interrupted by master")
