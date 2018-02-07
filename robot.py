@@ -37,7 +37,7 @@ def readSensor1():
 
 if __name__ == '__main__':
     try:
-        myAnt = FireAnt('testrobot.json')
+        myAnt = FireAnt('auth.json')
         
         print(myAnt.is_robot_online())
         print(myAnt.get_name())
