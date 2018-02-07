@@ -1,5 +1,4 @@
 .gitignore
 auth.json
-auth.backup
 fireant.pyc
 robot.pyc
