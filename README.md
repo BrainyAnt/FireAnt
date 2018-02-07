@@ -1,6 +1,6 @@
 # FireAnt
 
-Python library interfacing Raspberry Pi with BrainyAnt platform.
+Python library interfacing Raspberry Pi with [BrainyAnt](http://www.brainyant.com "Robots.Unite") platform.
 Use this to build your own robot and code the funcionality you desire.
 
 ## Prerequisites
@@ -36,12 +36,12 @@ Use this to build your own robot and code the funcionality you desire.
 
 ## Usage
 
-1. Sign in or regster on [BrainyAnt](http://www.brainyant.com "Robots.Unite")
+1. Sign in or register on [BrainyAnt](http://www.brainyant.com "Robots.Unite")
 2. Create a new robot entry for your Raspberry Pi
-3. Download the __auth.json__ file
+3. Download the __auth.json__ file from the platform
 4. Copy __auth.json__ to FireAnt folder
 5. Edit __robot.py__
-6. Run robot.py: `python robot.py` or simply `./robot.py`
+6. Run __robot.py__: `python robot.py` or simply `./robot.py`
 
 ## Feedback
 
