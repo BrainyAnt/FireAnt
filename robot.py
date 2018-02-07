@@ -11,11 +11,6 @@ headlight = 17
 GPIO.setup(headlight, GPIO.OUT)
 
 def userFunction(message):
-    print(message["data"])
-    try:
-        print(message["data"]["fwd"])
-    except Exception:
-        pass
     if str(type(message["data"])) == "<type 'dict'>":
         if "fwd" in message["data"]:
             if message["data"]["fwd"]>0:
@@ -37,7 +32,7 @@ def readSensor1():
 
 if __name__ == '__main__':
     try:
-        myAnt = FireAnt('testrobot.json')
+        myAnt = FireAnt('auth.json')
         
         print(myAnt.is_robot_online())
         print(myAnt.get_name())

@@ -98,13 +98,10 @@ class FireAnt:
 
     def _stop_stream(self):
         """Stop stream"""
-        #PID=self._streamproc.pid
-        #print(PID)
-        #subprocess.Popen(['kill -9 ' + str(PID)], shell=True)
-        #subprocess.Popen(['kill -9 $(pgrep raspivid)'], shell=True)
         path = os.path.dirname(os.path.realpath(__file__))
-        subprocess.Popen([path+'/stream_stop.sh'], shell=True)
-        print("KILLED STREAM")
+        cmd = path + '/stream_stop.sh'
+        subprocess.Popen(cmd, shell=True)
+        #print("KILLED STREAM")
 
     def get_name(self):
         """Return robot name"""
