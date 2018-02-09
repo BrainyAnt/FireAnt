@@ -73,7 +73,7 @@ class FireAnt:
         self._userID = None
         self._userOn = None
         self._streamproc = None
-	self.my_stream = None
+        self.my_stream = None
 
         try:
             self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [2])
@@ -144,9 +144,9 @@ class FireAnt:
             for i in aux.each():
                 useron = i.val()['userOn']
         except TypeError:
-	    print("No user in queue")
-	    useron = False
-	except KeyboardInterrupt:
+	        print("No user in queue")
+	        useron = False
+        except KeyboardInterrupt:
             sys.exit(2)
         except KeyError:
             print("Missing field: userOn")
