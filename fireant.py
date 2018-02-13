@@ -6,7 +6,7 @@ import sched
 from threading import Thread
 import time
 import json
-import urllib2
+import requests
 import signal
 import subprocess
 import pyrebase
@@ -44,15 +44,25 @@ class FireAnt:
             sys.exit(400)
 
         try:
-            REQUEST = urllib2.Request('https://robots.brainyant.com:8080/robotLogin')
-            REQUEST.add_header('Content-Type', 'application/json')
-            RESPONSE = urllib2.urlopen(REQUEST, json.dumps(AUTH_DATA))
-            TOKEN = json.loads(RESPONSE.read())['customToken']
+            payload = json.dumps(AUTH_DATA)
+            headers={'content-type': 'application/json'}
+            req = requests.post('https://robots.brainyant.com:8080/robotLogin', data=payload, headers=headers)
+            TOKEN = req.json()['customToken']
             if TOKEN is None:
                 raise TokenRequestError
         except TokenRequestError:
-            print('Error! Could not retreive signin token from server. Server might be down.')
-            sys.exit(222)
+            print("Can't sign in to firebase. Invalid token.")
+
+        #try:
+        #    REQUEST = urllib2.Request('https://robots.brainyant.com:8080/robotLogin')
+        #    REQUEST.add_header('Content-Type', 'application/json')
+        #    RESPONSE = urllib2.urlopen(REQUEST, json.dumps(AUTH_DATA))
+        #    TOKEN = json.loads(RESPONSE.read())['customToken']
+        #    if TOKEN is None:
+        #        raise TokenRequestError
+        #except TokenRequestError:
+        #    print('Error! Could not retreive signin token from server. Server might be down.')
+        #    sys.exit(222)
         
         try:
             USERID = None
@@ -91,7 +101,7 @@ class FireAnt:
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
             path = os.path.dirname(os.path.realpath(__file__))
             cmd = path + '/stream.sh' + ' ' + streamparam
-            self._streamproc = subprocess.Popen(cmd, shell=True)
+            #self._streamproc = subprocess.Popen(cmd, shell=True)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
@@ -100,7 +110,7 @@ class FireAnt:
         """Stop stream"""
         path = os.path.dirname(os.path.realpath(__file__))
         cmd = path + '/stream_stop.sh'
-        subprocess.Popen(cmd, shell=True)
+        #subprocess.Popen(cmd, shell=True)
         #print("KILLED STREAM")
 
     def get_name(self):
@@ -255,15 +265,14 @@ class FireAnt:
         except KeyboardInterrupt:
             for item in scheduler.queue:
                 scheduler.cancel(item)
-            #sys.stdout.write('Not still alive!!!')
-            print('Not still alive!!!')
+            sys.stdout.write('Not still alive!!!')
 
     def _still_alive(self, scheduler, n_seconds):
         """Send a signal to the server every n seconds"""
         try:
-            iamalive = urllib2.Request('https://robots.brainyant.com:8080/iAmAlive')
-            iamalive.add_header('Content-Type', 'application/json')
-            urllib2.urlopen(iamalive, json.dumps({'ownerID': self._ownerID, 'robotID': self._robotID}))            
+            headers = {'content-type': 'application/json'}
+            payload = json.dumps({'ownerID': self._ownerID, 'robotID': self._robotID})
+            requests.post('https://robots.brainyant.com:8080/iAmAlive', data=payload, headers=headers)
             if self.is_robot_online(): #there is a problem here with SSL. 
                 scheduler.enter(n_seconds, 1, self._still_alive, (scheduler, n_seconds))
         except KeyboardInterrupt:
