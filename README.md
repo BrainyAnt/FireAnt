@@ -15,6 +15,8 @@ Use this to build your own robot and code the funcionality you desire.
 
 1. Raspbian Stretch OS
 2. Python 3
+3. pip3
+4. RPi.GPIO
 
 ## Installation
 
@@ -24,11 +26,12 @@ Use this to build your own robot and code the funcionality you desire.
     - Navigate to "Interfacing Options"
     - Select "Camera"
     - Reboot
-4. Check Python version: `python -V` or `python3 -V`
-    - If python is not installed, install via `sudo apt-get install python3`
+4. Check Python version: `python3 -V`
+    - If python is not installed, install it via: `sudo apt-get install python3`
 5. Get Pyrebase: `python3 -m pip install Pyrebase`
+6. If RPi.GPIO is not installed, install it via: `pip3 install RPi.GPIO`
 6. Install ffmpeg: `sudo apt-get install ffmpeg`
-7. Get brainyant FireAnt package: `git clone https://github.com/BrainyAnt/FireAnt.git`
+7. Install brainyant FireAnt package: `git clone https://github.com/BrainyAnt/FireAnt.git`
 
 ## Usage
 
