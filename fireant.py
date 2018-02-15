@@ -52,17 +52,6 @@ class FireAnt:
                 raise TokenRequestError
         except TokenRequestError:
             print("Can't sign in to firebase. Invalid token.")
-
-        #try:
-        #    REQUEST = urllib2.Request('https://robots.brainyant.com:8080/robotLogin')
-        #    REQUEST.add_header('Content-Type', 'application/json')
-        #    RESPONSE = urllib2.urlopen(REQUEST, json.dumps(AUTH_DATA))
-        #    TOKEN = json.loads(RESPONSE.read())['customToken']
-        #    if TOKEN is None:
-        #        raise TokenRequestError
-        #except TokenRequestError:
-        #    print('Error! Could not retreive signin token from server. Server might be down.')
-        #    sys.exit(222)
         
         try:
             USERID = None
@@ -101,7 +90,7 @@ class FireAnt:
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
             path = os.path.dirname(os.path.realpath(__file__))
             cmd = path + '/stream.sh' + ' ' + streamparam
-            #self._streamproc = subprocess.Popen(cmd, shell=True)
+            self._streamproc = subprocess.Popen(cmd, shell=True)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
@@ -110,8 +99,7 @@ class FireAnt:
         """Stop stream"""
         path = os.path.dirname(os.path.realpath(__file__))
         cmd = path + '/stream_stop.sh'
-        #subprocess.Popen(cmd, shell=True)
-        #print("KILLED STREAM")
+        subprocess.Popen(cmd, shell=True)
 
     def get_name(self):
         """Return robot name"""
@@ -196,7 +184,7 @@ class FireAnt:
 
     def _set_startControl(self):
         """Record timestamp when control session starts"""
-        timestamp = int(round(time.time()*1000)) #calendar.timegm(time.gmtime())
+        timestamp = int(round(time.time()*1000))
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).update({"startControl": timestamp}, token=self._idToken)
 
     def _get_startControl(self):
@@ -205,7 +193,6 @@ class FireAnt:
 
     def wait_for_available_user(self):
         """Wait for user to show up in queue"""
-        # Get UID
         try:
             u_entry = None
             userid = None
@@ -223,7 +210,7 @@ class FireAnt:
 
     def log_session(self):
         """Log a session to archive after it is over"""
-        log_timestamp = int(round(time.time()*1000)) #queue_archive entry: timestamp
+        log_timestamp = int(round(time.time()*1000))
         try:
             log_data = {
                 log_timestamp: {
@@ -273,7 +260,7 @@ class FireAnt:
             headers = {'content-type': 'application/json'}
             payload = json.dumps({'ownerID': self._ownerID, 'robotID': self._robotID})
             requests.post('https://robots.brainyant.com:8080/iAmAlive', data=payload, headers=headers)
-            if self.is_robot_online(): #there is a problem here with SSL. 
+            if self.is_robot_online():
                 scheduler.enter(n_seconds, 1, self._still_alive, (scheduler, n_seconds))
         except KeyboardInterrupt:
             for item in scheduler.queue:
