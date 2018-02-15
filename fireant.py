@@ -6,7 +6,7 @@ import sched
 from threading import Thread
 import time
 import json
-import urllib2
+import requests
 import signal
 import subprocess
 import pyrebase
@@ -44,15 +44,14 @@ class FireAnt:
             sys.exit(400)
 
         try:
-            REQUEST = urllib2.Request('https://robots.brainyant.com:8080/robotLogin')
-            REQUEST.add_header('Content-Type', 'application/json')
-            RESPONSE = urllib2.urlopen(REQUEST, json.dumps(AUTH_DATA))
-            TOKEN = json.loads(RESPONSE.read())['customToken']
+            payload = json.dumps(AUTH_DATA)
+            headers={'content-type': 'application/json'}
+            req = requests.post('https://robots.brainyant.com:8080/robotLogin', data=payload, headers=headers)
+            TOKEN = req.json()['customToken']
             if TOKEN is None:
                 raise TokenRequestError
         except TokenRequestError:
-            print('Error! Could not retreive signin token from server. Server might be down.')
-            sys.exit(222)
+            print("Can't sign in to firebase. Invalid token.")
         
         try:
             USERID = None
@@ -73,7 +72,7 @@ class FireAnt:
         self._userID = None
         self._userOn = None
         self._streamproc = None
-	self.my_stream = None
+        self.my_stream = None
 
         try:
             self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [2])
@@ -101,7 +100,6 @@ class FireAnt:
         path = os.path.dirname(os.path.realpath(__file__))
         cmd = path + '/stream_stop.sh'
         subprocess.Popen(cmd, shell=True)
-        #print("KILLED STREAM")
 
     def get_name(self):
         """Return robot name"""
@@ -144,9 +142,9 @@ class FireAnt:
             for i in aux.each():
                 useron = i.val()['userOn']
         except TypeError:
-	    print("No user in queue")
-	    useron = False
-	except KeyboardInterrupt:
+	        print("No user in queue")
+	        useron = False
+        except KeyboardInterrupt:
             sys.exit(2)
         except KeyError:
             print("Missing field: userOn")
@@ -186,7 +184,7 @@ class FireAnt:
 
     def _set_startControl(self):
         """Record timestamp when control session starts"""
-        timestamp = int(round(time.time()*1000)) #calendar.timegm(time.gmtime())
+        timestamp = int(round(time.time()*1000))
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).update({"startControl": timestamp}, token=self._idToken)
 
     def _get_startControl(self):
@@ -195,7 +193,6 @@ class FireAnt:
 
     def wait_for_available_user(self):
         """Wait for user to show up in queue"""
-        # Get UID
         try:
             u_entry = None
             userid = None
@@ -213,7 +210,7 @@ class FireAnt:
 
     def log_session(self):
         """Log a session to archive after it is over"""
-        log_timestamp = int(round(time.time()*1000)) #queue_archive entry: timestamp
+        log_timestamp = int(round(time.time()*1000))
         try:
             log_data = {
                 log_timestamp: {
@@ -255,16 +252,15 @@ class FireAnt:
         except KeyboardInterrupt:
             for item in scheduler.queue:
                 scheduler.cancel(item)
-            #sys.stdout.write('Not still alive!!!')
-            print('Not still alive!!!')
+            sys.stdout.write('Not still alive!!!')
 
     def _still_alive(self, scheduler, n_seconds):
         """Send a signal to the server every n seconds"""
         try:
-            iamalive = urllib2.Request('https://robots.brainyant.com:8080/iAmAlive')
-            iamalive.add_header('Content-Type', 'application/json')
-            urllib2.urlopen(iamalive, json.dumps({'ownerID': self._ownerID, 'robotID': self._robotID}))            
-            if self.is_robot_online(): #there is a problem here with SSL. 
+            headers = {'content-type': 'application/json'}
+            payload = json.dumps({'ownerID': self._ownerID, 'robotID': self._robotID})
+            requests.post('https://robots.brainyant.com:8080/iAmAlive', data=payload, headers=headers)
+            if self.is_robot_online():
                 scheduler.enter(n_seconds, 1, self._still_alive, (scheduler, n_seconds))
         except KeyboardInterrupt:
             for item in scheduler.queue:

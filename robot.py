@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 import time
 import random
+import sys
 from fireant import FireAnt
 import RPi.GPIO as GPIO
-
+headlight = 17
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
-
-headlight = 17
 GPIO.setup(headlight, GPIO.OUT)
 
 def userFunction(message):
@@ -15,19 +14,22 @@ def userFunction(message):
         if "fwd" in message["data"]:
             if message["data"]["fwd"]>0:
                 GPIO.output(headlight, GPIO.HIGH)
+                print("ON")
             else:
                 GPIO.output(headlight, GPIO.LOW)
+                print("OFF")
     elif str(type(message["data"])) == "<type 'int'>":
         if message["path"] == "fwd":
             if message["data"] > 1:
                 GPIO.output(headlight, GPIO.HIGH)
+                print("ON")
             else:
                 GPIO.output(headlight, GPIO.LOW)
+                print("OFF")
 
 
 
 def readSensor1():
-    #get sensor data
     return random.randint(1,501)
 
 if __name__ == '__main__':
@@ -44,8 +46,7 @@ if __name__ == '__main__':
             myAnt.stream_control_data(userFunction) 
             
             while myAnt.get_useron():
-    	        myAnt.publish_data(("sensor", random.randint(1,100), True))
-    	        time.sleep(random.randint(1,10))
+                sys.stdout.write("User is ON \r")
 
             myAnt.log_session()
 

@@ -14,25 +14,24 @@ Use this to build your own robot and code the funcionality you desire.
 ### Software
 
 1. Raspbian Stretch OS
-2. Python 2.7
+2. Python 3
+3. pip3
+4. RPi.GPIO
 
 ## Installation
 
 1. Install Raspbian [Stretch](https://www.raspberrypi.org/downloads/raspbian/) OS on a microSD card
-2. Connect Raspberry Pi to WiFi network ( [how to guide](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md "SETTING WIFI UP VIA THE COMMAND LINE") )
+2. Connect Raspberry Pi to WiFi network ( [how to guide](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md "SETTING UP WIFI VIA THE COMMAND LINE") )
 3. Enable Raspicam: `sudo raspi-config`
     - Navigate to "Interfacing Options"
     - Select "Camera"
     - Reboot
-4. Check Python version: `python -V`
-    - If python is not installed, install via `sudo apt-get install python`
-5. Install pip: `sudo apt-get install python-pip`
-6. Get Pyrebase: `sudo pip install Pyrebase`
-7. Apply this [Pyrebase fix](https://gist.github.com/codeAshu/f6384203706e989b0d38db6e0a9d11e7 "Pyrebase fix")
-    - Edit __pyrebase.py__
-    - Location: /home/pi/.local/lib/python2.7/site-packages/pyrebase/pyrebase.py
-8. Install ffmpeg: `sudo apt-get install ffmpeg`
-9. Get brainyant FireAnt package: `git clone https://github.com/BrainyAnt/FireAnt.git`
+4. Check Python version: `python3 -V`
+    - If python is not installed, install it via: `sudo apt-get install python3`
+5. Get Pyrebase: `python3 -m pip install Pyrebase`
+6. If RPi.GPIO is not installed, install it via: `pip3 install RPi.GPIO`
+6. Install ffmpeg: `sudo apt-get install ffmpeg`
+7. Install brainyant FireAnt package: `git clone https://github.com/BrainyAnt/FireAnt.git`
 
 ## Usage
 
