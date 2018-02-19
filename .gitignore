@@ -1,1 +1,4 @@
+.gitignore
 auth.json
+fireant.pyc
+robot.pyc
