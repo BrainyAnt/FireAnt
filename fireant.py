@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -64,20 +64,28 @@ class FireAnt:
         except InvalidTokenException:
             print("Can't sign in to firebase. Invalid token.")
 
+        self._userData = USER_DATA
+        self._auth = AUTH
         self._database = DB
         self._idToken = IDTOKEN
         self._ownerID = AUTH_DATA["ownerID"]
         self._robotID = AUTH_DATA["robotID"]
+        
         self._userEntry = None
         self._userID = None
         self._userOn = None
         self._streamproc = None
         self._my_control_stream = None
         self._my_sensor_stream = None
+        
         #Start a new thread with the "still_alive" recurrent function
         self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [2])
         self._parathread.daemon = True
         self._parathread.start()
+
+        #self._parathread2 = Thread(target = self._start_half_hour_refresh, args = [1])
+        #self._parathread2.daemon = True
+        #self._parathread2.start()
 
     def get_name(self):
         """Return robot name"""
@@ -292,16 +300,45 @@ class FireAnt:
             sys.stdout.write('Not still alive 2!!!')
             sys.exit(10)
     
+    def _start_half_hour_refresh(self, scheduler):
+        try:
+            scheduler = sched.scheduler(time.time, time.sleep)
+            scheduler.enter(1800, 1, self._half_hour_refresh, (scheduler))
+            scheduler.run()
+        except KeyboardInterrupt:
+            for item in scheduler.queue:
+                scheduler.cancel(item)
+            sys.stdout.write('Not refreshing')
+
+    def _half_hour_refresh(self, scheduler):
+        """Refresh auth token every 1800 seconds"""
+        try:
+            FRESH_TOKEN = self._auth.refresh(self._userData['refreshToken'])
+            self._idToken = FRESH_TOKEN['idToken']
+            scheduler.enter(1800, 1, self._half_hour_refresh, (scheduler))
+        except KeyboardInterrupt:
+            for item in scheduler.queue:
+                scheduler.cancel(item)
+            sys.stdout.write('Not still refreshing!!!')
+            sys.exit(10)
+
+    def add_sensor(self, name):
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('output').update({name: 0}, token=self._idToken)
+    
+    def remove_sensor(self, name):
+        try:
+            self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('output').child(name).remove(token=self._idToken)
+        except Exception:
+            print(Exception.__name__)
+
+    def update_sensor(self, name, value):
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('output').update({name: value}, token=self._idToken)
+
     #COMING SOON
     #
-    #Refresh token. It expires in 1h
-    #
-    #addsensor, addactuator
-    #send to firebase: name, key, value
-    #actuator type in {on/off, progressive, hold}
-    #sensor type in {stop, once, loop}
-    #path /users/ownerID/robots/robotID/users/userID/SensorData -> {name: type}
-    #path /users/ownerID/robots/robotID/profile/Actuators -> {name: {key: ikey, type: itype}}
-    #get from firebase: [...]/userID/SensorData -> {name: requestType}
-    #publish to firebase: [...]/robotID/output -> {name: value}
-    #initSensor(name, 0) -> [...]/robotID/ouput
+    # add_actuator
+    # send to firebase: name, key
+    # actuator type in {on/off, progressive, hold}
+    # sensor type in {stop, once, loop}
+    # path /users/ownerID/robots/robotID/users/userID/SensorData -> {name: type}
+    # path /users/ownerID/robots/robotID/profile/Actuators -> {name: {key: ikey, type: itype}}
