@@ -72,34 +72,12 @@ class FireAnt:
         self._userID = None
         self._userOn = None
         self._streamproc = None
-        self.my_stream = None
-
-        try:
-            self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [2])
-            self._parathread.daemon = True
-            self._parathread.start()
-        except KeyboardInterrupt:
-            sys.stdout.write("Killed (not still alive) 111")
-            print('Killed (not still alive)')
-
-    def _start_stream(self):
-        """Start stream"""
-        try:
-            camera = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('profile').child('stream').get(token=self._idToken).val()
-            secretkey = self._database.child('users').child(self._ownerID).child('cameras').child(camera).child('secretKey').get(token=self._idToken).val()
-            streamparam = self._ownerID + '/' + camera + '/' + secretkey
-            path = os.path.dirname(os.path.realpath(__file__))
-            cmd = path + '/stream.sh' + ' ' + streamparam
-            self._streamproc = subprocess.Popen(cmd, shell=True)
-        except IOError:
-            print("ERROR: Stream unable to start")
-            sys.exit(3)
-
-    def _stop_stream(self):
-        """Stop stream"""
-        path = os.path.dirname(os.path.realpath(__file__))
-        cmd = path + '/stream_stop.sh'
-        subprocess.Popen(cmd, shell=True)
+        self._my_control_stream = None
+        self._my_sensor_stream = None
+        #Start a new thread with the "still_alive" recurrent function
+        self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [2])
+        self._parathread.daemon = True
+        self._parathread.start()
 
     def get_name(self):
         """Return robot name"""
@@ -159,24 +137,34 @@ class FireAnt:
 
     def get_control_data(self):
         """Return ControlData values from firebase"""
-        user_id = self._get_first_user()[1]
+        #user_id = self._get_first_user()[1]
         try:
-            return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(user_id).child("ControlData").order_by_key().get(token=self._idToken).val()
+            return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").order_by_key().get(token=self._idToken).val()
         except TypeError:
             return None
 
-    def stream_control_data(self, mycallback):
-        self.my_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").stream(mycallback, stream_id="control data stream", token=self._idToken)
-
-    def stream_handler(self, message):
-        print(message)
-
-    def close_stream(self):
+    def get_sensor_data(self):
+        """Return ControlData values from firebase"""
+        #user_id = self._get_first_user()[1]
         try:
-            if self.my_stream:
-                self.my_stream.close()
+            return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("SensorData").order_by_key().get(token=self._idToken).val()
+        except TypeError:
+            return None
+
+    def stream_control_data(self, myControlCallback):
+        self._my_control_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").stream(myControlCallback, stream_id="control data stream", token=self._idToken)
+
+    def stream_sensor_data(self, mySensorCallback):
+        self._my_sensor_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("SensorData").stream(mySensorCallback, stream_id="control data stream", token=self._idToken)
+
+    def close_streams(self):
+        try:
+            if self._my_control_stream:
+                self._my_control_stream.close()
+            if self._my_sensor_stream:
+                self._my_sensor_stream.close()
         except AttributeError:
-            print('There is no spoon')
+            print('There is no stream')
     
     def _set_robotOn(self):
         """Set robotOn flag to True"""
@@ -191,6 +179,23 @@ class FireAnt:
         """Return timestamp for start of control session"""
         return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).child('startControl').get(token=self._idToken).val()
 
+    def publish_data(self, data):
+        """Publish data to database"""
+        sensor_name = data[0]
+        sensor_value = data[1]
+        sensor_request = data[2]
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child("sensors").child(sensor_name).update({'request': sensor_request}, token=self._idToken)
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child("sensors").child(sensor_name).update({'value': sensor_value}, token=self._idToken)
+
+    def get_sensor_request(self, sensor):
+        """Return sensor request"""
+        try:
+            return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child("sensors").child(sensor).child('request').get(token=self._idToken).val()
+        except TypeError:
+            self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child("sensors").child(sensor).update({'request': False}, token=self._idToken)
+            print('Sensor might not be registered')
+            return False
+
     def wait_for_available_user(self):
         """Wait for user to show up in queue"""
         try:
@@ -203,9 +208,9 @@ class FireAnt:
             print("INTERRUPT!")
             sys.exit(0)
         
+        self._start_video_stream()
         self._set_robotOn()
         self._set_startControl()
-        self._start_stream()
         return (u_entry, userid, uon)
 
     def log_session(self):
@@ -235,14 +240,33 @@ class FireAnt:
                     'waitTime': None
                 }
             }
-        self.close_stream()
+        self.close_streams()
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queueArchive').update(log_data, token=self._idToken)
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).remove(token=self._idToken)
-        self._stop_stream()
+        self._stop_video_stream()
         self._userID = None
         self._userEntry = None
         self._userOn = None
 
+    def _start_video_stream(self):
+        """Start stream"""
+        try:
+            camera = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('profile').child('stream').get(token=self._idToken).val()
+            secretkey = self._database.child('users').child(self._ownerID).child('cameras').child(camera).child('secretKey').get(token=self._idToken).val()
+            streamparam = self._ownerID + '/' + camera + '/' + secretkey
+            path = os.path.dirname(os.path.realpath(__file__))
+            cmd = path + '/stream.sh' + ' ' + streamparam
+            #self._streamproc = subprocess.Popen(cmd, shell=True)
+        except IOError:
+            print("ERROR: Stream unable to start")
+            sys.exit(3)
+
+    def _stop_video_stream(self):
+        """Stop stream"""
+        path = os.path.dirname(os.path.realpath(__file__))
+        cmd = path + '/stream_stop.sh'
+        #subprocess.Popen(cmd, shell=True)
+    
     def _start_still_alive_every_n_secs(self, n_seconds):
         """Start a recurring function that signals the robot is online every n seconds"""
         try:
@@ -260,27 +284,24 @@ class FireAnt:
             headers = {'content-type': 'application/json'}
             payload = json.dumps({'ownerID': self._ownerID, 'robotID': self._robotID})
             requests.post('https://robots.brainyant.com:8080/iAmAlive', data=payload, headers=headers)
-            if self.is_robot_online():
-                scheduler.enter(n_seconds, 1, self._still_alive, (scheduler, n_seconds))
+            #if self.is_robot_online():
+            scheduler.enter(n_seconds, 1, self._still_alive, (scheduler, n_seconds))
         except KeyboardInterrupt:
             for item in scheduler.queue:
                 scheduler.cancel(item)
             sys.stdout.write('Not still alive 2!!!')
             sys.exit(10)
-
-    def publish_data(self, data):
-        """Publish data to database"""
-        sensor_name = data[0]
-        sensor_value = data[1]
-        sensor_request = data[2]
-        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child("sensors").child(sensor_name).update({'request': sensor_request}, token=self._idToken)
-        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child("sensors").child(sensor_name).update({'value': sensor_value}, token=self._idToken)
-
-    def get_sensor_request(self, sensor):
-        """Return sensor request"""
-        try:
-            return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child("sensors").child(sensor).child('request').get(token=self._idToken).val()
-        except TypeError:
-            self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child("sensors").child(sensor).update({'request': False}, token=self._idToken)
-            print('Sensor might not be registered')
-            return False
+    
+    #COMING SOON
+    #
+    #Refresh token. It expires in 1h
+    #
+    #addsensor, addactuator
+    #send to firebase: name, key, value
+    #actuator type in {on/off, progressive, hold}
+    #sensor type in {stop, once, loop}
+    #path /users/ownerID/robots/robotID/users/userID/SensorData -> {name: type}
+    #path /users/ownerID/robots/robotID/profile/Actuators -> {name: {key: ikey, type: itype}}
+    #get from firebase: [...]/userID/SensorData -> {name: requestType}
+    #publish to firebase: [...]/robotID/output -> {name: value}
+    #initSensor(name, 0) -> [...]/robotID/ouput
