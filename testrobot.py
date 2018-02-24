@@ -19,18 +19,10 @@ def userControlHandler(message):
             else:
                 print("OFF")
 
-def userSensorHandler(message):
-    print("SENSOR CHANGE")
-    switcher = {
-        "sensor1": userSensorFunction1,
-        "sensor2": userSensorFunction2,
-    }
-    func = switcher.get(message["path"],"nothing")
-    return func(message["data"])
+def lightSensor():
+    return random.randint(1,501)
 
 def userSensorFunction1():
-    # read sensor
-    # publish sensor
     return random.randint(1,501)
 
 def userSensorFunction2():
@@ -52,24 +44,29 @@ if __name__ == '__main__':
         print(myAnt.get_name())
         print(myAnt.get_description())
 
-        #myAnt.addsensor(name, pin, function, key)
-        #myAnt.removesensor(name)
-        #myAnt.modfifysensor(name, pin, function, key)
-        #myAnt.addactuator(name, pin, function, key)
-        #myAnt.removeactuator(name)
-        #myAnt.modfifyactuator(name, pin, function, key)
+        myAnt.add_sensor("light", lightSensor)
+        myAnt.add_sensor("sensor1", userSensorFunction1)
+        myAnt.add_sensor("sensor2", userSensorFunction2)
+
+        #myAnt.add_sensor(name, callback_function)
+        #myAnt.remove_sensor(name)
+        #myAnt.update_sensor(name, value)
+        
+        #myAnt.add_actuator(name, pin, function, key)
+        #myAnt.remove_actuator(name)
+        #myAnt.modify_actuator(name, pin, function, key)
 
         while True: #possibly myAnt.is_robot_online
             print('Waiting for users ...')
-            myAnt.wait_for_available_user()
-            
+            myAnt.wait_for_users()
             print('Got user!')
+
             myAnt.stream_control_data(userControlHandler)
-            myAnt.stream_sensor_data(userSensorHandler)
-            #myAnt.register_sensor(name, pin, function)
-            #myAnt.stream_sensor_requests()
-            while myAnt.get_useron():
+            myAnt.stream_sensor_data()
+
+            while myAnt.user_online():
                 pass
+            
             myAnt.log_session()
 
     except KeyboardInterrupt:
