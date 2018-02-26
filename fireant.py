@@ -25,10 +25,10 @@ class FireAnt:
     def __init__(self, authfile):    
         """ Register with firebase using authentication data. Return database reference, toke, and userID """
         self._authfile = authfile
-        AUTH_DATA, DB, IDTOKEN = self._firebase_sign_in(self._authfile)
+        AUTH, AUTH_DATA, DB, USER_DATA, IDTOKEN = self._firebase_sign_in(self._authfile)
         
-        #self._userData = USER_DATA
-        #self._auth = AUTH
+        self._userData = USER_DATA
+        self._auth = AUTH
         self._database = DB
         self._idToken = IDTOKEN
         self._ownerID = AUTH_DATA["ownerID"]
@@ -37,18 +37,22 @@ class FireAnt:
         self._userEntry = None
         self._userID = None
         self._userOn = None
-        self._streamproc = None
+        
+        self._video_stream = None
+        
         self._my_control_stream = None
         self._my_sensor_stream = None
+        self._my_user_stream = None
+        
         self._sensor_list = {}
         
         #Start a new thread with the "still_alive" recurrent function
-        self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [2])
+        self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [3])
         self._parathread.daemon = True
         self._parathread.start()
 
         # Start a new thread with the "token refresh" recurrent function
-        self._parathread2 = Thread(target = self._start_token_refresh, args = [self._authfile])
+        self._parathread2 = Thread(target = self._start_token_refresh, args = [1800])
         self._parathread2.daemon = True
         self._parathread2.start()
 
@@ -84,15 +88,19 @@ class FireAnt:
         try:
             USERID = None
             USER_DATA = AUTH.sign_in_with_custom_token(TOKEN)
-            FRESH_DATA = AUTH.refresh(USER_DATA['refreshToken'])
-            USERID = FRESH_DATA['userId']
-            IDTOKEN = FRESH_DATA['idToken']
+            USER_DATA = AUTH.refresh(USER_DATA['refreshToken'])
+            USERID = USER_DATA['userId']
+            IDTOKEN = USER_DATA['idToken']
             if USERID is None:
                 raise InvalidTokenException
         except InvalidTokenException:
             print("Can't sign in to firebase. Invalid token.")
-        return (AUTH_DATA, DB, IDTOKEN)
+        return (AUTH, AUTH_DATA, DB, USER_DATA, IDTOKEN)
     
+    def _refresh_token(self):
+        self._userData = self._auth.refresh(self._userData['refreshToken'])
+        self._idToken = self._userData["idToken"]
+
     def get_name(self):
         """Return robot name"""
         name = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('profile').child('name').get(token=self._idToken).val()
@@ -111,22 +119,6 @@ class FireAnt:
         """Return field value of isOnline"""
         return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('profile').child('isOnline').get(token=self._idToken).val()
 
-    def _get_first_user(self):
-        """Get first user information"""
-        (uid, useron, user_entry) = (None, None, None)
-        firstuser = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').order_by_key().limit_to_first(1).get(token=self._idToken)
-        try:
-            for i in firstuser.each():
-                uid = i.val()['uid']
-                useron = i.val()['userOn']
-                user_entry = i.key()
-        except (TypeError, KeyError):
-            (uid, useron, user_entry) = (None, None, None)
-        self._userID = uid
-        self._userOn = useron
-        self._userEntry = user_entry
-        return (user_entry, uid, useron)
-
     def user_online(self):
         """Get first user status"""
         try:
@@ -140,14 +132,14 @@ class FireAnt:
             sys.exit(2)
         except KeyError:
             print("Missing field: userOn")
-            self._delete_entry()
+            self._delete_entry(self._userEntry)
             useron = False
         return useron
 
-    def _delete_entry(self):
+    def _delete_entry(self, entry):
         """Delete bad entry in database"""
         print('deleting bad entry ...')
-        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).remove(token=self._idToken)
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(entry).remove(token=self._idToken)
 
     def get_control_data(self):
         """Return ControlData values from firebase"""
@@ -171,15 +163,86 @@ class FireAnt:
     def stream_sensor_data(self):
         self._my_sensor_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("SensorData").stream(self._sensor_handler, stream_id="control data stream", token=self._idToken)
 
+    def _queue_stream(self):
+        self._my_user_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').stream(self._handle_user, stream_id="first_user", token=self._idToken)
+    
     def _close_streams(self):
         try:
             if self._my_control_stream:
                 self._my_control_stream.close()
             if self._my_sensor_stream:
                 self._my_sensor_stream.close()
+            if self._my_first_user_stream:
+                self._my_first_user_stream.close()
         except AttributeError:
             print('There is no stream')
+
+    def _handle_user(self, message):
+        pass
     
+    def _get_first_entry(self):
+        try:
+            firstuser = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').order_by_key().limit_to_first(1).get(token=self._idToken)
+            for i in firstuser.each():
+                entry = i.key()
+            self._userEntry = entry
+            return entry
+        except TypeError:
+            return None
+    
+    def _get_first_user(self):
+        """Get first user information"""
+        (uid, useron, user_entry) = (None, None, None)
+        firstuser = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').order_by_key().limit_to_first(1).get(token=self._idToken)
+        try:
+            for i in firstuser.each():
+                uid = i.val()['uid']
+                useron = i.val()['userOn']
+                user_entry = i.key()
+        except (TypeError, KeyError):
+            (uid, useron, user_entry) = (None, None, None)
+        self._userID = uid
+        self._userOn = useron
+        self._userEntry = user_entry
+        return (user_entry, uid, useron)
+
+    def _get_entry_data_ID(self, user_entry):
+        try:
+            data = self._my_user_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(user_entry).get(token=self._idToken).val()
+            return data['uid']
+        except KeyError:
+            self._delete_entry(user_entry)
+            return None
+        except TypeError:
+            self._delete_entry(user_entry)
+            return None
+
+    def _get_entry_data_ON(self, entry):
+        data = self._my_user_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(entry).get(token=self._idToken).val()
+        return data['userOn']
+
+    def start_user_wait(self):
+        (user_entry, uid, useron) = (None, None, False)
+        
+        while user_entry is None:
+            user_entry = self._get_first_entry()
+        uid = self._get_entry_data_ID(user_entry)
+
+        if uid is None:
+            print("bad entry ... deleting")
+            self._delete_entry(user_entry)
+            self.start_user_wait()
+        else:
+            print("is user online?")
+            while useron is False:
+                useron = self._get_entry_data_ON(user_entry)
+        print("user is online")
+        self._userEntry = user_entry
+        self._userID = uid
+
+        self._set_robotOn()
+        self._set_startControl()
+
     def _set_robotOn(self):
         """Set robotOn flag to True"""
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).update({"robotOn": True}, token=self._idToken)
@@ -196,24 +259,6 @@ class FireAnt:
     def _get_sensor_request(self, sensor):
         """Return sensor request"""
         return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("SensorData").child(sensor).get(token=self._idToken).val()
-
-    def wait_for_users(self):
-        """Wait for user to show up in queue"""
-        #log "ActiveUser" user if any
-        try:
-            u_entry = None
-            userid = None
-            uon = None
-            while userid is None and uon is None:
-                (u_entry, userid, uon) = self._get_first_user()
-        except KeyboardInterrupt:
-            print("INTERRUPT!")
-            sys.exit(0)
-        #move current user to "ActiveUser" section
-        self._start_video_stream()
-        self._set_robotOn()
-        self._set_startControl()
-        return (u_entry, userid, uon)
 
     def log_session(self):
         """Log a session to archive after it is over"""
@@ -258,7 +303,7 @@ class FireAnt:
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
             path = os.path.dirname(os.path.realpath(__file__))
             cmd = path + '/stream.sh' + ' ' + streamparam
-            #self._streamproc = subprocess.Popen(cmd, shell=True)
+            #self._video_stream = subprocess.Popen(cmd, shell=True)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
@@ -294,27 +339,29 @@ class FireAnt:
             sys.stdout.write('Not still alive 2!!!')
             sys.exit(10)
     
-    def _start_token_refresh(self, authfile):
+    def _start_token_refresh(self, timer):
         try:
             scheduler = sched.scheduler(time.time, time.sleep)
-            scheduler.enter(20, 2, self._token_refresh, (scheduler, authfile))
+            scheduler.enter(timer, 2, self._token_refresh, (scheduler))
             scheduler.run()
         except KeyboardInterrupt:
             for item in scheduler.queue:
                 scheduler.cancel(item)
             sys.stdout.write('Not refreshing')
 
-    def _token_refresh(self, scheduler, authfile):
+    def _token_refresh(self, scheduler, timer):
         """Refresh auth token every 1800 seconds"""
         try:
-            foo, self._database, self._idToken = self._firebase_sign_in(authfile)
-            scheduler.enter(20, 2, self._token_refresh, (scheduler, authfile))
+            print("Refreshing...")
+            self._refresh_token()
+            scheduler.enter(timer, 2, self._token_refresh, (scheduler, timer))
+            print("Refreshed.")
         except KeyboardInterrupt:
             for item in scheduler.queue:
                 scheduler.cancel(item)
             sys.stdout.write('Not still refreshing!!!')
             sys.exit(10)
-
+    
     def add_sensor(self, name, callback):
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('output').update({name: 0}, token=self._idToken)
         self._sensor_list[name]=callback
@@ -327,14 +374,20 @@ class FireAnt:
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('output').update({name: value}, token=self._idToken)
 
     def _continous_update_sensor(self, sensor, reader):
-        while self._get_sensor_request(sensor) == "loop":
+        while self.user_online() and self._get_sensor_request(sensor) == "loop":
             self._update_sensor(sensor, reader())
+            print("I read the {} sensor!".format(sensor))
             time.sleep(1)
+        else:
+            self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("SensorData").update({sensor: "stop"}, token=self._idToken)
     
     def _sensor_handler(self, message):
-        for s in message["data"]:
-            sensor = s
-            readType = message["data"][s]
+        try:
+            for s in message["data"]:
+                sensor = s
+                readType = message["data"][s]
+        except TypeError:
+            return
         reader = self._sensor_list[sensor]
         if readType == "once":
             self._update_sensor(sensor, reader())

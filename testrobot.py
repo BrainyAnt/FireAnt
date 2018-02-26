@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import random
+import time
 from fireant import FireAnt
 
 
@@ -43,8 +44,7 @@ if __name__ == '__main__':
         # log session
         # go to "wait ..." 
 
-        ant = FireAnt('auth.json')
-        myAnt = ant
+        myAnt = FireAnt('auth.json')
         print(myAnt.get_name())
         print(myAnt.get_description())
 
@@ -59,19 +59,22 @@ if __name__ == '__main__':
         # myAnt.add_actuator(name, pin, function, key)
         # myAnt.remove_actuator(name)
         # myAnt.modify_actuator(name, pin, function, key)
-
+        loop = 0
         while True: # possibly myAnt.is_robot_online
-            print('Waiting for users ...')
-            myAnt.wait_for_users()
-            print('Got user!')
+            loop = loop + 1
+            print("Loop: {}".format(loop))
+
+            myAnt.start_user_wait()
 
             myAnt.stream_control_data(userControlHandler)
             myAnt.stream_sensor_data()
 
             while myAnt.user_online():
+                time.sleep(1)
                 pass
             
             myAnt.log_session()
+            time.sleep(1)
 
     except KeyboardInterrupt:
         print("Interrupted by master")
