@@ -24,7 +24,35 @@ class FireAnt:
     
     def __init__(self, authfile):    
         """ Register with firebase using authentication data. Return database reference, toke, and userID """
+        self._authfile = authfile
+        AUTH_DATA, DB, IDTOKEN = self._firebase_sign_in(self._authfile)
         
+        #self._userData = USER_DATA
+        #self._auth = AUTH
+        self._database = DB
+        self._idToken = IDTOKEN
+        self._ownerID = AUTH_DATA["ownerID"]
+        self._robotID = AUTH_DATA["robotID"]
+        
+        self._userEntry = None
+        self._userID = None
+        self._userOn = None
+        self._streamproc = None
+        self._my_control_stream = None
+        self._my_sensor_stream = None
+        self._sensor_list = {}
+        
+        #Start a new thread with the "still_alive" recurrent function
+        self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [2])
+        self._parathread.daemon = True
+        self._parathread.start()
+
+        # Start a new thread with the "token refresh" recurrent function
+        self._parathread2 = Thread(target = self._start_token_refresh, args = [self._authfile])
+        self._parathread2.daemon = True
+        self._parathread2.start()
+
+    def _firebase_sign_in(self, authfile):
         FIREBASE_CONFIG = {
             "apiKey": "AIzaSyDC23ZxJ7YjwVfM0BQ2o6zAtWinFrxCrcI",
             "authDomain": "brainyant-2e30d.firebaseapp.com",
@@ -63,31 +91,8 @@ class FireAnt:
                 raise InvalidTokenException
         except InvalidTokenException:
             print("Can't sign in to firebase. Invalid token.")
-
-        self._userData = USER_DATA
-        self._auth = AUTH
-        self._database = DB
-        self._idToken = IDTOKEN
-        self._ownerID = AUTH_DATA["ownerID"]
-        self._robotID = AUTH_DATA["robotID"]
-        
-        self._userEntry = None
-        self._userID = None
-        self._userOn = None
-        self._streamproc = None
-        self._my_control_stream = None
-        self._my_sensor_stream = None
-        self._sensor_list = {}
-        
-        #Start a new thread with the "still_alive" recurrent function
-        self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [2])
-        self._parathread.daemon = True
-        self._parathread.start()
-
-        #self._parathread2 = Thread(target = self._start_half_hour_refresh, args = [1])
-        #self._parathread2.daemon = True
-        #self._parathread2.start()
-
+        return (AUTH_DATA, DB, IDTOKEN)
+    
     def get_name(self):
         """Return robot name"""
         name = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('profile').child('name').get(token=self._idToken).val()
@@ -115,7 +120,7 @@ class FireAnt:
                 uid = i.val()['uid']
                 useron = i.val()['userOn']
                 user_entry = i.key()
-        except TypeError:
+        except (TypeError, KeyError):
             (uid, useron, user_entry) = (None, None, None)
         self._userID = uid
         self._userOn = useron
@@ -289,22 +294,21 @@ class FireAnt:
             sys.stdout.write('Not still alive 2!!!')
             sys.exit(10)
     
-    def _start_half_hour_refresh(self, scheduler):
+    def _start_token_refresh(self, authfile):
         try:
             scheduler = sched.scheduler(time.time, time.sleep)
-            scheduler.enter(1800, 1, self._half_hour_refresh, (scheduler))
+            scheduler.enter(20, 2, self._token_refresh, (scheduler, authfile))
             scheduler.run()
         except KeyboardInterrupt:
             for item in scheduler.queue:
                 scheduler.cancel(item)
             sys.stdout.write('Not refreshing')
 
-    def _half_hour_refresh(self, scheduler):
+    def _token_refresh(self, scheduler, authfile):
         """Refresh auth token every 1800 seconds"""
         try:
-            FRESH_TOKEN = self._auth.refresh(self._userData['refreshToken'])
-            self._idToken = FRESH_TOKEN['idToken']
-            scheduler.enter(1800, 1, self._half_hour_refresh, (scheduler))
+            foo, self._database, self._idToken = self._firebase_sign_in(authfile)
+            scheduler.enter(20, 2, self._token_refresh, (scheduler, authfile))
         except KeyboardInterrupt:
             for item in scheduler.queue:
                 scheduler.cancel(item)

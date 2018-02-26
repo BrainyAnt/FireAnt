@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
-import time
 import random
-import sys
 from fireant import FireAnt
+
 
 def userControlHandler(message):
     if type(message["data"]).__name__ == 'dict':
@@ -19,14 +18,18 @@ def userControlHandler(message):
             else:
                 print("OFF")
 
+
 def lightSensor():
     return random.randint(1,501)
+
 
 def userSensorFunction1():
     return random.randint(1,501)
 
+
 def userSensorFunction2():
     return random.randint(1,501)
+
 
 if __name__ == '__main__':
     try:
@@ -40,7 +43,8 @@ if __name__ == '__main__':
         # log session
         # go to "wait ..." 
 
-        myAnt = FireAnt('auth.json')
+        ant = FireAnt('auth.json')
+        myAnt = ant
         print(myAnt.get_name())
         print(myAnt.get_description())
 
@@ -48,15 +52,15 @@ if __name__ == '__main__':
         myAnt.add_sensor("sensor1", userSensorFunction1)
         myAnt.add_sensor("sensor2", userSensorFunction2)
 
-        #myAnt.add_sensor(name, callback_function)
-        #myAnt.remove_sensor(name)
-        #myAnt.update_sensor(name, value)
+        # myAnt.add_sensor(name, callback_function)
+        # myAnt.remove_sensor(name)
+        # myAnt.update_sensor(name, value)
         
-        #myAnt.add_actuator(name, pin, function, key)
-        #myAnt.remove_actuator(name)
-        #myAnt.modify_actuator(name, pin, function, key)
+        # myAnt.add_actuator(name, pin, function, key)
+        # myAnt.remove_actuator(name)
+        # myAnt.modify_actuator(name, pin, function, key)
 
-        while True: #possibly myAnt.is_robot_online
+        while True: # possibly myAnt.is_robot_online
             print('Waiting for users ...')
             myAnt.wait_for_users()
             print('Got user!')
@@ -70,5 +74,4 @@ if __name__ == '__main__':
             myAnt.log_session()
 
     except KeyboardInterrupt:
-        myAnt.log_session()
         print("Interrupted by master")
