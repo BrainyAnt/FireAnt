@@ -342,7 +342,7 @@ class FireAnt:
     def _start_token_refresh(self, timer):
         try:
             scheduler = sched.scheduler(time.time, time.sleep)
-            scheduler.enter(timer, 2, self._token_refresh, (scheduler))
+            scheduler.enter(timer, 2, self._token_refresh, (scheduler, timer))
             scheduler.run()
         except KeyboardInterrupt:
             for item in scheduler.queue:
