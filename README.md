@@ -138,4 +138,4 @@ Remove an actuator that you have registered.
 
 ## Feedback
 Give us feedback. Tell us about any issues or troubleshooting. [Contact](http://www.brainyant.com/contact) us via email 
-at *contact@brainyant.com* or message us on [facebook]()
+at *contact@brainyant.com* or message us on [facebook](https://www.facebook.com/brainyantrobots/)
