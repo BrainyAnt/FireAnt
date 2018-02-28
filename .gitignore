@@ -4,3 +4,4 @@ fireant.pyc
 robot.pyc
 *.pyc
 .vscode
+.idea

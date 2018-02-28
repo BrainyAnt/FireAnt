@@ -46,7 +46,7 @@ class FireAnt:
         
         self._sensor_list = {}
         
-        #Start a new thread with the "still_alive" recurrent function
+        # Start a new thread with the "still_alive" recurrent function
         self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [3])
         self._parathread.daemon = True
         self._parathread.start()
@@ -126,8 +126,8 @@ class FireAnt:
             for i in aux.each():
                 useron = i.val()['userOn']
         except TypeError:
-	        print("No user in queue")
-	        useron = False
+            print("No user in queue")
+            useron = False
         except KeyboardInterrupt:
             sys.exit(2)
         except KeyError:
@@ -143,7 +143,7 @@ class FireAnt:
 
     def get_control_data(self):
         """Return ControlData values from firebase"""
-        #user_id = self._get_first_user()[1]
+        # user_id = self._get_first_user()[1]
         try:
             return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").order_by_key().get(token=self._idToken).val()
         except TypeError:
@@ -151,7 +151,7 @@ class FireAnt:
 
     def get_sensor_data(self):
         """Return ControlData values from firebase"""
-        #user_id = self._get_first_user()[1]
+        # user_id = self._get_first_user()[1]
         try:
             return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("SensorData").order_by_key().get(token=self._idToken).val()
         except TypeError:
@@ -161,7 +161,7 @@ class FireAnt:
         self._my_control_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").stream(myControlCallback, stream_id="control data stream", token=self._idToken)
 
     def stream_sensor_data(self):
-        self._my_sensor_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("SensorData").stream(self._sensor_handler, stream_id="control data stream", token=self._idToken)
+        self._my_sensor_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("SensorData").stream(self._sensor_handler, stream_id="sensor data stream", token=self._idToken)
 
     def _queue_stream(self):
         self._my_user_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').stream(self._handle_user, stream_id="first_user", token=self._idToken)
@@ -398,8 +398,8 @@ class FireAnt:
     #COMING SOON
     #
     # add_actuator
-    # send to firebase: name, key
-    # actuator type in {on/off, progressive, hold}
-    # sensor type in {stop, once, loop}
+    # send to firebase: name, key, type
+    # actuator key binding
+    # actuator type in {press, tap, hold}
     # path /users/ownerID/robots/robotID/users/userID/SensorData -> {name: type}
     # path /users/ownerID/robots/robotID/profile/Actuators -> {name: {key: ikey, type: itype}}
