@@ -8,7 +8,7 @@ from fireant import FireAnt
     #-------------------------------+---------------------------------------------------------------+
     # motor:                        | motor:                                                        |
     #   motor1: [-100,100]          |   motor1: keys:   {cw: Q, ccw: A}                             |
-    #                               |           type:   [incremental, tap]                                 |
+    #                               |           type:   [incremental, tap]                          |
     #-------------------------------+---------------------------------------------------------------+
     # dual motor setup:             | dual motor setup:                                             |
     #   fwd     [0-100]             |   keys:   {fwd: UP, back: DOWN, left: LEFT, right: RIGHT}     |
@@ -46,6 +46,10 @@ from fireant import FireAnt
 # Sensor
 #   read_TEMP_function()
 #   read_LIGHT_function()
+# Commands/Actions          [COMING SOON]
+#   move_forward()          [COMING SOON]
+#   switch_light()          [COMING SOON]
+#   read_temperature()      [COMING SOON]
 
 
 def userControlDataHandler(message):
@@ -63,13 +67,13 @@ def userControlDataHandler(message):
     #        func = switcher.get(devName, lambda: "INVALID")
     #        func(devices[devName])
 
-    if type(message["data"]).__name__ == 'dict':
-        if "fwd" in message["data"]:
-            if message["data"]["fwd"]>0:
-                print("dictON")
-            else:
-                print("dictOFF")
-    
+    #if type(message["data"]).__name__ == 'dict':
+    if "fwd" in message["data"]:
+        if message["data"]["fwd"]>0:
+            print("dictON")
+        else:
+            print("dictOFF")
+
     # elif type(message["data"]).__name__ == 'int':
     #    if message["path"] == "fwd":
     #        if message["data"] > 1:
@@ -90,6 +94,10 @@ def userSensorFunction2():
     return random.randint(1,501)
 
 
+def move_forward():
+    print("FORWARD")
+
+
 if __name__ == '__main__':
     try:
         # FLOW:
@@ -103,21 +111,16 @@ if __name__ == '__main__':
         #   go to "wait for user"
         # setup: add/remove sensors/actuators (future: action/commands). set key bindings.
 
-        myAnt = FireAnt('auth.json')
-
-        # CHANGE: start session in constructor? get registered commands after session has started.
+        myAnt = FireAnt('private.json', userControlDataHandler)
 
         print(myAnt.get_name())
         print(myAnt.get_description())
 
-        # sensor registered in 'output'
-        # sensor
-        #   value
-
         # myAnt.add_sensor(name, callback_function)
         myAnt.add_sensor("light", lightSensor)
         myAnt.add_sensor("sensor1", userSensorFunction1)
-        myAnt.add_sensor("sensor2", userSensorFunction2)
+        # myAnt.add_sensor("sensor2", userSensorFunction2)
+
         # myAnt.remove_sensor(name)
 
         # actuators registered in 'input'   [PROPOSED]
@@ -129,27 +132,10 @@ if __name__ == '__main__':
         # myAnt.remove_actuator(name)
         # myAnt.modify_actuator(name, pin, function, key)
 
-        #COMMANDS
-        #add_command (name, key, type)
-        #returns number, T/F, string
-
-        #wrap in a single function -> send to library
-        loop = 0
-        while True: # possibly myAnt.is_robot_online
-            loop = loop + 1
-            print("Loop: {}".format(loop))
-
-            myAnt.start_user_wait()
-
-            myAnt.stream_control_data(userControlDataHandler)
-            myAnt.stream_sensor_data()
-
-            while myAnt.user_online():
-                time.sleep(1)
-                pass
-            
-            myAnt.log_session() # move to library
-            time.sleep(1)
+        # COMMANDS
+        # add_command (name, key, type)
+        # returns [number, T/F, string]
+        myAnt.add_command('fwd', move_forward, 'w', "hold")
 
     except KeyboardInterrupt:
         print("Interrupted by master")

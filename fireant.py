@@ -7,14 +7,14 @@ from threading import Thread
 import time
 import json
 import requests
-import signal
-import subprocess
 import pyrebase
 
 # Exception class definition
+
 class TokenRequestError(Exception):
     """Could not retreive token exception."""
     pass
+
 class InvalidTokenException(Exception):
     """Received invalid authentication token exception."""
     pass
@@ -22,7 +22,7 @@ class InvalidTokenException(Exception):
 class FireAnt:
     """The BrainyAnt firebase communication class"""
     
-    def __init__(self, authfile):    
+    def __init__(self, authfile, userControlDataHandler):
         """ Register with firebase using authentication data. Return database reference, toke, and userID """
         self._authfile = authfile
         AUTH, AUTH_DATA, DB, USER_DATA, IDTOKEN = self._firebase_sign_in(self._authfile)
@@ -45,6 +45,7 @@ class FireAnt:
         self._my_user_stream = None
         
         self._sensor_list = {}
+        self._command_list = {}
         
         # Start a new thread with the "still_alive" recurrent function
         self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [3])
@@ -55,6 +56,12 @@ class FireAnt:
         self._parathread2 = Thread(target = self._start_token_refresh, args = [1800])
         self._parathread2.daemon = True
         self._parathread2.start()
+
+        # Start waiting for users in a new thread
+        print('Main loop')
+        self._mainloop_thread = Thread(target = self._main_loop, args = [userControlDataHandler])
+        self._mainloop_thread.start()
+        print('After main loop')
 
     def _firebase_sign_in(self, authfile):
         FIREBASE_CONFIG = {
@@ -86,7 +93,6 @@ class FireAnt:
             print("Can't sign in to firebase. Invalid token.")
         
         try:
-            USERID = None
             USER_DATA = AUTH.sign_in_with_custom_token(TOKEN)
             USER_DATA = AUTH.refresh(USER_DATA['refreshToken'])
             USERID = USER_DATA['userId']
@@ -100,6 +106,19 @@ class FireAnt:
     def _refresh_token(self):
         self._userData = self._auth.refresh(self._userData['refreshToken'])
         self._idToken = self._userData["idToken"]
+
+    def _main_loop(self, userControlDataHandler):
+        try:
+            while True:                                 # maybe replace with myAnt.is_robot_online
+                self._start_user_wait()
+                self._stream_control_data(userControlDataHandler)
+                self._stream_sensor_data()
+                #self.stream_commands()
+                while self.user_online():
+                    pass
+                self._log_session()
+        except KeyboardInterrupt:
+            print("Main loop interrupted by keyboard.")
 
     def get_name(self):
         """Return robot name"""
@@ -157,14 +176,11 @@ class FireAnt:
         except TypeError:
             return None
 
-    def stream_control_data(self, myControlCallback):
+    def _stream_control_data(self, myControlCallback):
         self._my_control_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").stream(myControlCallback, stream_id="control data stream", token=self._idToken)
 
-    def stream_sensor_data(self):
+    def _stream_sensor_data(self):
         self._my_sensor_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("SensorData").stream(self._sensor_handler, stream_id="sensor data stream", token=self._idToken)
-
-    def _queue_stream(self):
-        self._my_user_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').stream(self._handle_user, stream_id="first_user", token=self._idToken)
     
     def _close_streams(self):
         try:
@@ -172,8 +188,6 @@ class FireAnt:
                 self._my_control_stream.close()
             if self._my_sensor_stream:
                 self._my_sensor_stream.close()
-            if self._my_first_user_stream:
-                self._my_first_user_stream.close()
         except AttributeError:
             print('There is no stream')
 
@@ -208,7 +222,7 @@ class FireAnt:
 
     def _get_entry_data_ID(self, user_entry):
         try:
-            data = self._my_user_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(user_entry).get(token=self._idToken).val()
+            data = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(user_entry).get(token=self._idToken).val()
             return data['uid']
         except KeyError:
             self._delete_entry(user_entry)
@@ -221,7 +235,7 @@ class FireAnt:
         data = self._my_user_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(entry).get(token=self._idToken).val()
         return data['userOn']
 
-    def start_user_wait(self):
+    def _start_user_wait(self):
         (user_entry, uid, useron) = (None, None, False)
         
         while user_entry is None:
@@ -260,7 +274,7 @@ class FireAnt:
         """Return sensor request"""
         return self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("SensorData").child(sensor).get(token=self._idToken).val()
 
-    def log_session(self):
+    def _log_session(self):
         """Log a session to archive after it is over"""
         log_timestamp = int(round(time.time()*1000))
         try:
@@ -395,10 +409,32 @@ class FireAnt:
             r = Thread(target=self._continous_update_sensor, args=[sensor, reader])
             r.start()
 
-    #COMING SOON
+    def add_command(self, name, callback, key, behavior):
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').update({name: {'key': key, 'behavior': behavior}}, token=self._idToken)
+        # Add command to ControlData for each user.
+        self._command_list[name]=callback
+
+    def remove_command(self, name):
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').child(name).remove(token=self._idToken)
+        del self._command_list[name]
+
+    def change_command(self, name, callback, key, behavior):
+        self.remove_command(name)
+        self.add_command(name, callback, key, behavior)
+
+    def _command_handler(self, message):
+        try:
+            for com in message["data"]:
+                # Control data should have {cmd: value} -> backend should create entries for each user.
+
+                self._command_list[com](message['data'][com])
+        except TypeError:
+            return
+
+    # COMING SOON
     #
-    # add_actuator
-    # send to firebase: name, key, type
+    # add_actuator/command
+    # send to firebase: name, key, behavior
     # actuator key binding
     # actuator type in {press, tap, hold}
     # path /users/ownerID/robots/robotID/users/userID/SensorData -> {name: type}
