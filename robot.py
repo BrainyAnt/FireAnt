@@ -2,11 +2,7 @@
 
 import random
 import time
-import RPi.GPIO as GPIO
 from fireant import FireAnt
-
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
 
 MOTOR11 = 9
 MOTOR12 = 10
