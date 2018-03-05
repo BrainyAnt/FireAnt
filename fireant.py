@@ -113,7 +113,7 @@ class FireAnt:
                 self._start_user_wait()
                 self._stream_control_data(userControlDataHandler)
                 self._stream_sensor_data()
-                #self.stream_commands()
+                # self.stream_commands()
                 while self.user_online():
                     pass
                 self._log_session()

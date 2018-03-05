@@ -67,7 +67,7 @@ def userControlDataHandler(message):
     #        func = switcher.get(devName, lambda: "INVALID")
     #        func(devices[devName])
 
-    #if type(message["data"]).__name__ == 'dict':
+    # if type(message["data"]).__name__ == 'dict':
     if "fwd" in message["data"]:
         if message["data"]["fwd"]>0:
             print("dictON")
@@ -133,6 +133,7 @@ if __name__ == '__main__':
         # myAnt.modify_actuator(name, pin, function, key)
 
         # COMMANDS
+        # TODO Add handling of new action in back-end.
         # add_command (name, key, type)
         # returns [number, T/F, string]
         myAnt.add_command('fwd', move_forward, 'w', "hold")
