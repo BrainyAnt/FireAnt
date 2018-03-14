@@ -1,5 +1,6 @@
 .gitignore
 auth.json
+private.json
 fireant.pyc
 robot.pyc
 *.pyc

@@ -4,6 +4,7 @@ import os
 import sys
 import sched
 from threading import Thread
+import subprocess
 import time
 import json
 import requests
@@ -117,6 +118,7 @@ class FireAnt:
         try:
             while True:                                 # maybe replace with myAnt.is_robot_online
                 self._start_user_wait()
+                self._start_video_stream()
                 self._stream_control_data(userControlDataHandler)
                 self._stream_sensor_data()
                 # self.stream_commands()
@@ -326,7 +328,7 @@ class FireAnt:
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
             path = os.path.dirname(os.path.realpath(__file__))
             cmd = path + '/stream.sh' + ' ' + streamparam
-            # self._video_stream = subprocess.Popen(cmd, shell=True)
+            self._video_stream = subprocess.Popen(cmd, shell=True)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
@@ -335,7 +337,7 @@ class FireAnt:
         """Stop stream"""
         path = os.path.dirname(os.path.realpath(__file__))
         cmd = path + '/stream_stop.sh'
-        # subprocess.Popen(cmd, shell=True)
+        subprocess.Popen(cmd, shell=True)
     
     def _start_still_alive_every_n_secs(self, n_seconds):
         """Start a recurring function that signals the robot is online every n seconds"""
