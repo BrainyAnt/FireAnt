@@ -11,57 +11,63 @@ import pyrebase
 
 # Exception class definition
 
+
 class TokenRequestError(Exception):
     """Could not retreive token exception."""
     pass
 
+
 class InvalidTokenException(Exception):
     """Received invalid authentication token exception."""
     pass
+
 
 class FireAnt:
     """The BrainyAnt firebase communication class"""
     
     def __init__(self, authfile, userControlDataHandler):
         """ Register with firebase using authentication data. Return database reference, toke, and userID """
-        self._authfile = authfile
-        AUTH, AUTH_DATA, DB, USER_DATA, IDTOKEN = self._firebase_sign_in(self._authfile)
-        
-        self._userData = USER_DATA
-        self._auth = AUTH
-        self._database = DB
-        self._idToken = IDTOKEN
-        self._ownerID = AUTH_DATA["ownerID"]
-        self._robotID = AUTH_DATA["robotID"]
-        
-        self._userEntry = None
-        self._userID = None
-        self._userOn = None
-        
-        self._video_stream = None
-        
-        self._my_control_stream = None
-        self._my_sensor_stream = None
-        self._my_user_stream = None
-        
-        self._sensor_list = {}
-        self._command_list = {}
-        
-        # Start a new thread with the "still_alive" recurrent function
-        self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [3])
-        self._parathread.daemon = True
-        self._parathread.start()
+        try:
+            self._authfile = authfile
+            AUTH, AUTH_DATA, DB, USER_DATA, IDTOKEN = self._firebase_sign_in(self._authfile)
+            
+            self._userData = USER_DATA
+            self._auth = AUTH
+            self._database = DB
+            self._idToken = IDTOKEN
+            self._ownerID = AUTH_DATA["ownerID"]
+            self._robotID = AUTH_DATA["robotID"]
+            
+            self._clear_queue()
 
-        # Start a new thread with the "token refresh" recurrent function
-        self._parathread2 = Thread(target = self._start_token_refresh, args = [1800])
-        self._parathread2.daemon = True
-        self._parathread2.start()
+            self._userEntry = None
+            self._userID = None
+            self._userOn = None
+            
+            self._video_stream = None
+            
+            self._my_control_stream = None
+            self._my_sensor_stream = None
+            self._my_user_stream = None
+            
+            self._sensor_list = {}
+            self._command_list = {}
+            
+            # Start a new thread with the "still_alive" recurrent function
+            self._parathread = Thread(target = self._start_still_alive_every_n_secs, args = [3])
+            self._parathread.daemon = True
+            self._parathread.start()
 
-        # Start waiting for users in a new thread
-        print('Main loop')
-        self._mainloop_thread = Thread(target = self._main_loop, args = [userControlDataHandler])
-        self._mainloop_thread.start()
-        print('After main loop')
+            # Start a new thread with the "token refresh" recurrent function
+            self._parathread2 = Thread(target = self._start_token_refresh, args = [1800])
+            self._parathread2.daemon = True
+            self._parathread2.start()
+
+            # Start waiting for users in a new thread
+            self._mainloop_thread = Thread(target = self._main_loop, args=[userControlDataHandler])
+            self._mainloop_thread.start()
+        except KeyboardInterrupt:
+            print("I was interrupted.")
 
     def _firebase_sign_in(self, authfile):
         FIREBASE_CONFIG = {
@@ -160,6 +166,10 @@ class FireAnt:
         print('deleting bad entry ...')
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(entry).remove(token=self._idToken)
 
+    def _clear_queue(self):
+        """Clear the user queue on startup"""
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').remove(token=self._idToken)
+
     def get_control_data(self):
         """Return ControlData values from firebase"""
         # user_id = self._get_first_user()[1]
@@ -189,7 +199,8 @@ class FireAnt:
             if self._my_sensor_stream:
                 self._my_sensor_stream.close()
         except AttributeError:
-            print('There is no stream')
+            # print('There is no stream')
+            pass
 
     def _handle_user(self, message):
         pass
@@ -245,12 +256,10 @@ class FireAnt:
         if uid is None:
             print("bad entry ... deleting")
             self._delete_entry(user_entry)
-            self.start_user_wait()
+            self._start_user_wait()
         else:
-            print("is user online?")
             while useron is False:
                 useron = self._get_entry_data_ON(user_entry)
-        print("user is online")
         self._userEntry = user_entry
         self._userID = uid
 
@@ -317,7 +326,7 @@ class FireAnt:
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
             path = os.path.dirname(os.path.realpath(__file__))
             cmd = path + '/stream.sh' + ' ' + streamparam
-            #self._video_stream = subprocess.Popen(cmd, shell=True)
+            # self._video_stream = subprocess.Popen(cmd, shell=True)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
@@ -326,7 +335,7 @@ class FireAnt:
         """Stop stream"""
         path = os.path.dirname(os.path.realpath(__file__))
         cmd = path + '/stream_stop.sh'
-        #subprocess.Popen(cmd, shell=True)
+        # subprocess.Popen(cmd, shell=True)
     
     def _start_still_alive_every_n_secs(self, n_seconds):
         """Start a recurring function that signals the robot is online every n seconds"""
@@ -345,7 +354,6 @@ class FireAnt:
             headers = {'content-type': 'application/json'}
             payload = json.dumps({'ownerID': self._ownerID, 'robotID': self._robotID})
             requests.post('https://robots.brainyant.com:8080/iAmAlive', data=payload, headers=headers)
-            #if self.robot_online():
             scheduler.enter(n_seconds, 1, self._still_alive, (scheduler, n_seconds))
         except KeyboardInterrupt:
             for item in scheduler.queue:
@@ -412,7 +420,7 @@ class FireAnt:
     def add_command(self, name, callback, key, behavior):
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').update({name: {'key': key, 'behavior': behavior}}, token=self._idToken)
         # Add command to ControlData for each user.
-        self._command_list[name]=callback
+        self._command_list[name] = callback
 
     def remove_command(self, name):
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').child(name).remove(token=self._idToken)

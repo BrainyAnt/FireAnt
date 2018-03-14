@@ -2,9 +2,11 @@
 
 import random
 from fireant import FireAnt
-import furnicaControl as UC
+# import custom control library
+import testControl as UC
 
 # User defined functions
+
 
 def light_on():
     pass
@@ -31,10 +33,9 @@ def user_sensor_function2():
 
 
 def user_control_handler(message):
-    print(message['data'])
-    # Example: message["data"] = {"fwd": 24}
+    # print(message['data'])
     fwd, back, left, right = (message['data']['fwd'], message['data']['back'], message['data']['left'], message['data']['right'])
-    UC.runMotors(fwd, back, left, right)
+    UC.run_motors(fwd, back, left, right)
 
 
 if __name__ == '__main__':
@@ -54,5 +55,5 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("Interrupted by owner")
         pass
-    UC.stop()
-    UC.clear()
+        UC.stop()
+        UC.clear()
