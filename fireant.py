@@ -479,3 +479,6 @@ class FireAnt:
                     executor(value)
         except TypeError:
             return
+        except KeyError:
+            print("Wrong command recorded")
+            return
