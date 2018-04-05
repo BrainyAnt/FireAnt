@@ -6,19 +6,23 @@ import userControl as UC        # use a custom control library
 
 # Examples of user defined functions
 
+def my_function(value):
+    # do something with value
+    print(value)
+
 def light_on():
     print("Light is ON")
-    pass
 
 
 def light_off():
     print("Light is OFF")
-    pass
 
 
-def light_switch():
-    print("Light SWITCH")
-    pass
+def light_switch(value):
+    if value:
+        light_on()
+    else:
+        light_off()
 
 
 def light_reader():
@@ -31,6 +35,13 @@ def temperature_reader():
 
 def distance_reader():
     return random.randint(0, 1001)
+
+
+def hold(value):
+    if value:
+        print('hold ON')
+    else:
+        print('hold OFF')
 
 
 if __name__ == '__main__':
@@ -46,11 +57,12 @@ if __name__ == '__main__':
         # myAnt.remove_sensor(name)
 
         # myAnt.add_command(name, callback, key, behavior)
-        myAnt.add_command('fwd', UC.move_forward, 'W', "hold")
-        myAnt.add_command('left', UC.move_left, 'A', "hold")
-        myAnt.add_command('right', UC.move_right, 'D', "hold")
-        myAnt.add_command('back', UC.move_back, 'S', "hold")
-        myAnt.add_command('light', light_switch, 'f', "press")
+        myAnt.add_command('fwd', UC.move_forward, 'W', "press")
+        myAnt.add_command('left', UC.move_left, 'A', "press")
+        myAnt.add_command('right', UC.move_right, 'D', "press")
+        myAnt.add_command('back', UC.move_back, 'S', "press")
+        myAnt.add_command('light', light_switch, 'F', "tap")
+        myAnt.add_command('hold on', hold, 'h', 'hold')
         # myAnt.remove_command(name)
 
     except KeyboardInterrupt:

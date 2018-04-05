@@ -55,7 +55,7 @@ class FireAnt:
             
             self._video_stream = None
             
-            self._my_control_stream = None
+            self._my_control_streams = {}
             self._my_sensor_stream = None
             self._my_user_stream = None     # TODO: Check if this is still needed
             
@@ -279,15 +279,16 @@ class FireAnt:
     #==========================================================================================================================================
 
     def _stream_control_data(self):
-        self._my_control_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").stream(self._command_handler, stream_id="control data stream", token=self._idToken)
+        for command in self._command_list:
+            self._my_control_streams[command] = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child(command).stream(self._command_handler, stream_id=command, token=self._idToken)
 
     def _stream_sensor_data(self):
         self._my_sensor_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("SensorData").stream(self._sensor_handler, stream_id="sensor data stream", token=self._idToken)
     
     def _close_streams(self):
         try:
-            if self._my_control_stream:
-                self._my_control_stream.close()
+            for stream in self._my_control_streams:
+                self._my_control_streams[stream].close()
             if self._my_sensor_stream:
                 self._my_sensor_stream.close()
         except AttributeError:
@@ -472,11 +473,9 @@ class FireAnt:
     def _command_handler(self, message):
         """Handle command events"""
         try:
-            for com in message["data"]:
-                value = message['data'][com]
-                if value:
-                    executor = self._command_list[com]
-                    executor(value)
+            # print('{} ( {} )'.format(message['stream_id'], message['data']))
+            executor=self._command_list[message['stream_id']]
+            executor(message['data'])
         except TypeError:
             return
         except KeyError:
