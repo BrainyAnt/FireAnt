@@ -2,58 +2,56 @@
 
 import random
 from fireant import FireAnt
-# import custom control library
-import testControl as UC
+import userControl as UC        # use a custom control library
 
-# User defined functions
-
+# Examples of user defined functions
 
 def light_on():
+    print("Light is ON")
     pass
 
 
 def light_off():
+    print("Light is OFF")
     pass
 
 
 def light_switch():
+    print("Light SWITCH")
     pass
 
 
-def light_sensor():
+def light_reader():
     return random.randint(1, 501)
 
 
-def user_sensor_function1():
-    return random.randint(1, 501)
+def temperature_reader():
+    return random.randint(-101, 101)
 
 
-def user_sensor_function2():
-    return random.randint(1, 501)
-
-
-def user_control_handler(message):
-    # print(message['data'])
-    fwd, back, left, right = (message['data']['fwd'], message['data']['back'], message['data']['left'], message['data']['right'])
-    UC.run_motors(fwd, back, left, right)
+def distance_reader():
+    return random.randint(0, 1001)
 
 
 if __name__ == '__main__':
     try:
-        UC.init()
-        UC.start()
-        myAnt = FireAnt('auth.json', user_control_handler)
+        myAnt = FireAnt('auth.json')
         print(myAnt.get_name())
         print(myAnt.get_description())
 
         # myAnt.add_sensor(name, callback_function)
-        myAnt.add_sensor("light", light_sensor)
-        myAnt.add_sensor("sensor1", user_sensor_function1)
-        myAnt.add_sensor("sensor2", user_sensor_function2)
+        myAnt.add_sensor("light", light_reader)
+        myAnt.add_sensor("temperature", temperature_reader)
+        myAnt.add_sensor("distance", distance_reader)
         # myAnt.remove_sensor(name)
+
+        # myAnt.add_command(name, callback, key, behavior)
+        myAnt.add_command('fwd', UC.move_forward, 'W', "hold")
+        myAnt.add_command('left', UC.move_left, 'A', "hold")
+        myAnt.add_command('right', UC.move_right, 'D', "hold")
+        myAnt.add_command('back', UC.move_back, 'S', "hold")
+        myAnt.add_command('light', light_switch, 'f', "press")
+        # myAnt.remove_command(name)
 
     except KeyboardInterrupt:
         print("Interrupted by owner")
-        pass
-        UC.stop()
-        UC.clear()
