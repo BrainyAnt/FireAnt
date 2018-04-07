@@ -50,9 +50,9 @@ client (ssh, PuTTy, etc.)
 6. Run __robot.py__: `python3 robot.py` or simply `./robot.py`
 7. Finally, you can see your robot is online on [brainyant](www.brainyant.com), in the __My Robots__ section
 
-##Functions
+## Functions
 
-###FireAnt (constructor)
+### FireAnt (constructor)
 This is the constructor that initializes a FireAnt object which allows the communication of commands and sensor data
 between your robot and the BrainyAnt platform. 
 ```python
@@ -61,44 +61,44 @@ myRobot = FireAnt(auth.json)
 It requires you to specify an authentication file (_auth.json_). The one that you've downloaded from the website 
 (_How to use: step 3_). It will look for that file in the same directory where _robot.py_ is.
 
-###get_name
+### get_name
 Returns the name that you gave your robot as a string.
 ```python
 myRobot.get_name()
 ```
 
-###get_description
+### get_description
 Returns the description of your robot as a string.
 ```python
 myRobot.get_description()
 ```
 
-###robot_online
+### robot_online
 Returns _True / False_ if the robot is online/offline (i.e. connected to the platform)
 ```python
 myRobot.robot_online()
 ```
 If the robot shuts down, or is out of WiFi range it will automatically be set to offline.
 
-###user_online
+### user_online
 Returns _True / False_ if a user has requested control of your robot and is online.
 ```python
 myRobot.user_online()
 ```
 
-###get_control_data
+### get_control_data
 Returns a snapshot of the entries and values found in _ControlData_ as a python _dict_
 ```python
 myRobot.get_control_data()
 ```
 
-###get_sensor_data
+### get_sensor_data
 Returns a snapshot of the entries and values found in _SensorData_ as a python _dict_
 ```python
 myRobot.get_sensor_data()
 ```
 
-###add_sensor
+### add_sensor
 Register a new sensor.
 ```python
 myRobot.add_sensor(name, callback)
@@ -106,25 +106,25 @@ myRobot.add_sensor(name, callback)
 It requires a _name_ and a _callback_ function that is run when a request is received for that 
 sensor.
 
-###remove_sensor
+### remove_sensor
 Remove a sensor referenced by name.
 ```python
 myRobot.renove_sensor(name)
 ```
 
-###add_command
+### add_command
 Add commands in order to control actuators specific to your custom robot. Specify the function you want to run when activating the command, bind a key, and set the behavior for when the key is pressed (on/off, tap, hold).
 ```python
 myRobot.add_command(name, callback, key, behavior)
 ```
 
-###remove_command
+### remove_command
 Remove a command that you have previously registered.
 ```python
 myRobot.remove_command(name)
 ```
 
-###change_command
+### change_command
 Change a registered command. Modify the associated function, key or behavior.
 ```python
 myRobot.change_command(name, new_callback, new_key, new_behavior)
