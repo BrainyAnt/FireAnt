@@ -1,8 +1,5 @@
 .gitignore
-auth.json
-private.json
-fireant.pyc
-robot.pyc
+*.json
 *.pyc
 .vscode
 .idea
