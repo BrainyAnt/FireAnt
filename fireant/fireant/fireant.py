@@ -33,12 +33,14 @@ class FireAnt:
     # CONSTRUCTOR
     #==========================================================================================================================================
 
-    def __init__(self, authfile):
+    def __init__(self, authfile, path, v_stream_start, v_stream_stop):
         """ Register with firebase using authentication data. Return database reference, toke, and userID """
         try:
             # Class members
-            self._authfile = authfile
-            AUTH, AUTH_DATA, DB, USER_DATA, IDTOKEN = self._firebase_sign_in(self._authfile)
+            self._path = path
+            self._v_stream_start = v_stream_start
+            self._v_stream_stop = v_stream_stop
+            AUTH, AUTH_DATA, DB, USER_DATA, IDTOKEN = self._firebase_sign_in(authfile)
             
             self._userData = USER_DATA
             self._auth = AUTH
@@ -98,8 +100,8 @@ class FireAnt:
         DB = FIREBASE.database()
         
         try:
-            DIR = os.path.dirname(os.path.realpath(__file__))
-            AUTH_DATA = json.load(open(DIR + '/' + authfile))
+            #DIR = os.path.dirname(os.path.realpath(__file__))
+            AUTH_DATA = json.load(authfile)
         except IOError:
             print("Config file not found!")
             sys.exit(400)
@@ -343,18 +345,18 @@ class FireAnt:
             camera = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('profile').child('stream').get(token=self._idToken).val()
             secretkey = self._database.child('users').child(self._ownerID).child('cameras').child(camera).child('secretKey').get(token=self._idToken).val()
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
-            path = os.path.dirname(os.path.realpath(__file__))
-            cmd = path + '/teststream.sh' + ' ' + streamparam
-            #self._video_stream = subprocess.Popen(cmd, shell=True)
+            #path = os.path.dirname(os.path.realpath(__file__))
+            cmd = self._path + '/' + self._v_stream_start + ' ' + streamparam
+            self._video_stream = subprocess.Popen(cmd, shell=True)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
 
     def _stop_video_stream(self):
         """Stop stream"""
-        path = os.path.dirname(os.path.realpath(__file__))
-        cmd = path + '/stream_stop.sh'
-        #subprocess.Popen(cmd, shell=True)
+        #path = os.path.dirname(os.path.realpath(__file__))
+        cmd = self._path + '/' + self._v_stream_stop
+        subprocess.Popen(cmd, shell=True)
     
     #==========================================================================================================================================
     # KEEP ALIVE & TOKEN REFRESH

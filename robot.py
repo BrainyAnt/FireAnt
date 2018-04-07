@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import random
+import os
+#from fireant import FireAnt
 from fireant import FireAnt
 import userControl as UC        # use a custom control library
 
@@ -46,7 +48,10 @@ def hold(value):
 
 if __name__ == '__main__':
     try:
-        myAnt = FireAnt('auth.json')
+        authfile = open('auth.json', 'r')
+        path = os.path.dirname(os.path.realpath(__file__))
+        myAnt = FireAnt(authfile, path, 'stream.sh', 'stream_stop.sh')
+
         print(myAnt.get_name())
         print(myAnt.get_description())
 
