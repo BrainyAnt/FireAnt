@@ -46,12 +46,12 @@ client (ssh, PuTTy, etc.)
 2. Create a new robot entry
 3. Download the __auth.json__ file from the platform
 4. Copy __auth.json__ to __FireAnt__ folder
-5. Edit __robot.py__ to define your robot's behavior using the functions from the package 
-and your own functions for controlling your robot
+5. Edit __robot.py__ to define your robot's behavior using the functions from the package and add your own functions for controlling your robot
 6. Run __robot.py__: `python3 robot.py` or simply `./robot.py`
 7. Finally, you can see your robot is online on [brainyant](www.brainyant.com), in the __My Robots__ section
 
 ##Functions
+
 ###FireAnt (constructor)
 This is the constructor that initializes a FireAnt object which allows the communication of commands and sensor data
 between your robot and the BrainyAnt platform. 
@@ -60,22 +60,44 @@ myRobot = FireAnt(auth.json)
 ```
 It requires you to specify an authentication file (_auth.json_). The one that you've downloaded from the website 
 (_How to use: step 3_). It will look for that file in the same directory where _robot.py_ is.
+
 ###get_name
 Returns the name that you gave your robot as a string.
 ```python
 myRobot.get_name()
 ```
+
 ###get_description
 Returns the description of your robot as a string.
 ```python
 myRobot.get_description()
 ```
+
 ###robot_online
 Returns _True / False_ if the robot is online/offline (i.e. connected to the platform)
 ```python
 myRobot.robot_online()
 ```
 If the robot shuts down, or is out of WiFi range it will automatically be set to offline.
+
+###user_online
+Returns _True / False_ if a user has requested control of your robot and is online.
+```python
+myRobot.user_online()
+```
+
+###get_control_data
+Returns a snapshot of the entries and values found in _ControlData_ as a python _dict_
+```python
+myRobot.get_control_data()
+```
+
+###get_sensor_data
+Returns a snapshot of the entries and values found in _SensorData_ as a python _dict_
+```python
+myRobot.get_sensor_data()
+```
+
 ###add_sensor
 Register a new sensor.
 ```python
@@ -83,58 +105,30 @@ myRobot.add_sensor(name, callback)
 ```
 It requires a _name_ and a _callback_ function that is run when a request is received for that 
 sensor.
+
 ###remove_sensor
 Remove a sensor referenced by name.
 ```python
 myRobot.renove_sensor(name)
 ```
-###start_user_wait
-Starts looking in the user queue for users who have requested control of your robot.
+
+###add_command
+Add commands in order to control actuators specific to your custom robot. Specify the function you want to run when activating the command, bind a key, and set the behavior for when the key is pressed (on/off, tap, hold).
 ```python
-myRobot.start_user_wait()
+myRobot.add_command(name, callback, key, behavior)
 ```
-When a user requests control, an entry is created in the user queue. The first one in the queue will be the first 
-to receive control as soon as he/she is online.
-Once someone is in control, the function automatically starts the video stream.
-###user_online
-Returns _True / False_ if a user has requested control of your robot and is online.
+
+###remove_command
+Remove a command that you have previously registered.
 ```python
-myRobot.user_online()
+myRobot.remove_command(name)
 ```
-###get_control_data
-Returns a snapshot of the entries and values found in _ControlData_ as a python _dict_
+
+###change_command
+Change a registered command. Modify the associated function, key or behavior.
 ```python
-myRobot.get_control_data()
+myRobot.change_command(name, new_callback, new_key, new_behavior)
 ```
-###get_sensor_data
-Returns a snapshot of the entries and values found in _SensorData_ as a python _dict_
-```python
-myRobot.get_sensor_data()
-```
-###stream_control_data
-Starts listening for changes in the _ControlData_ section and runs the specified callback function every time a change
-is detected.
-```python
-myRobot.stream_control_data(control_handler_function)
-```
-###stream_sensor_data
-Starts listening for changes in the _SensorData_ section (i.e. sensor requests) and runs the callback function specified
-for each sensor.
-```python
-myRobot.stream_sensor_data()
-``` 
-###log_session
-Logs the relevant data form the control session to an archive (start of session, user ID, control time). It also removes
-the user who was just in control from the queue. 
-```python
-myRobot.log_session()
-```
-##Coming soon
-###add_actuator
-You will have the option of easily adding actuators specific to your custom robot. You will be able to bind a key and
-set a behavior for when the key is pressed (on/off, tap, hold).
-###remove_actuator
-Remove an actuator that you have registered.
 
 ## Feedback
 Give us feedback. Tell us about any issues or troubleshooting. [Contact](http://www.brainyant.com/contact) us via email 
