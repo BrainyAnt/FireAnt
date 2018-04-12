@@ -344,8 +344,8 @@ class FireAnt:
             secretkey = self._database.child('users').child(self._ownerID).child('cameras').child(camera).child('secretKey').get(token=self._idToken).val()
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
             path = os.path.dirname(os.path.realpath(__file__))
-            cmd = path + '/teststream.sh' + ' ' + streamparam
-            #self._video_stream = subprocess.Popen(cmd, shell=True)
+            cmd = path + '/stream.sh' + ' ' + streamparam
+            self._video_stream = subprocess.Popen(cmd, shell=True)
         except IOError:
             print("ERROR: Stream unable to start")
             sys.exit(3)
@@ -354,7 +354,7 @@ class FireAnt:
         """Stop stream"""
         path = os.path.dirname(os.path.realpath(__file__))
         cmd = path + '/stream_stop.sh'
-        #subprocess.Popen(cmd, shell=True)
+        subprocess.Popen(cmd, shell=True)
     
     #==========================================================================================================================================
     # KEEP ALIVE & TOKEN REFRESH
