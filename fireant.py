@@ -435,7 +435,7 @@ class FireAnt:
             try:
                 for timestamp in queue:
                     current_timestamp = int(round(time.time()*1000))
-                    if current_timestamp - int(timestamp) > self.controltime:
+                    if current_timestamp - int(queue[timestamp]['startControl']) > self.controltime:
                         print('Founde a bad one.')
                         self._delete_entry(timestamp)
             except TypeError:
