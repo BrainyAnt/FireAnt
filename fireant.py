@@ -37,6 +37,7 @@ class FireAnt:
         """ Register with firebase using authentication data. Return database reference, toke, and userID """
         try:
             # Class members
+            self.controltime = 300*1000
             self._authfile = authfile
             AUTH, AUTH_DATA, DB, USER_DATA, IDTOKEN = self._firebase_sign_in(self._authfile)
             
@@ -73,6 +74,11 @@ class FireAnt:
             self._tokenrefreshthread = Thread(target = self._start_token_refresh, args = [1800])
             self._tokenrefreshthread.daemon = True
             self._tokenrefreshthread.start()
+
+            # Start a new thread with the "queue cleaner" recurrent function
+            self._queuecleanerthread = Thread(target = self._start_queue_cleaner, args = [10])
+            self._queuecleanerthread.daemon = True
+            self._queuecleanerthread.start()
 
             # Start waiting for users in a new thread
             self._mainloopthread = Thread(target = self._main_loop)
@@ -344,7 +350,7 @@ class FireAnt:
             secretkey = self._database.child('users').child(self._ownerID).child('cameras').child(camera).child('secretKey').get(token=self._idToken).val()
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
             path = os.path.dirname(os.path.realpath(__file__))
-            cmd = path + '/teststream.sh' + ' ' + streamparam
+            cmd = path + '/stream.sh' + ' ' + streamparam
             #self._video_stream = subprocess.Popen(cmd, shell=True)
         except IOError:
             print("ERROR: Stream unable to start")
@@ -357,7 +363,7 @@ class FireAnt:
         #subprocess.Popen(cmd, shell=True)
     
     #==========================================================================================================================================
-    # KEEP ALIVE & TOKEN REFRESH
+    # KEEP ALIVE & TOKEN REFRESH & QUEUE CLEANER
     #==========================================================================================================================================
     
     def _start_still_alive_every_n_secs(self, n_seconds):
@@ -411,6 +417,37 @@ class FireAnt:
                 scheduler.cancel(item)
             sys.stdout.write('Not still refreshing!!!')
             sys.exit(10)
+
+    def _start_queue_cleaner(self, n_seconds):
+        try:
+            scheduler = sched.scheduler(time.time, time.sleep)
+            scheduler.enter(n_seconds, 1, self._queue_cleaner, (scheduler, n_seconds))
+            scheduler.run()
+        except KeyboardInterrupt:
+            for item in scheduler.queue:
+                scheduler.cancel(item)
+            sys.stdout.write('Not cleaning queue anymore!!!')
+
+    def _queue_cleaner(self, scheduler, n_seconds):
+        try:
+            #print('Cleaning queue.')
+            queue = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').get(token=self._idToken).val()
+            try:
+                for timestamp in queue:
+                    current_timestamp = int(round(time.time()*1000))
+                    if current_timestamp - int(timestamp) > self.controltime:
+                        print('Founde a bad one.')
+                        self._delete_entry(timestamp)
+            except TypeError:
+                #print('Queue empty')
+                pass
+            scheduler.enter(n_seconds, 1, self._queue_cleaner, (scheduler, n_seconds))
+        except KeyboardInterrupt:
+            for item in scheduler.queue:
+                scheduler.cancel(item)
+            sys.stdout.write('Not cleaning queue anymore2!!!')
+            sys.exit(10)
+
     #==========================================================================================================================================
     # SENSORS & COMMANDS
     #==========================================================================================================================================
