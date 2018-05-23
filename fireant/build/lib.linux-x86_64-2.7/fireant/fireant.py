@@ -70,7 +70,6 @@ class FireAnt:
             self._keepalivethread = Thread(target = self._start_still_alive_every_n_secs, args = [3])
             self._keepalivethread.daemon = True
             self._keepalivethread.start()
-            print('Alive')
 
             # Start a new thread with the "token refresh" recurrent function
             self._tokenrefreshthread = Thread(target = self._start_token_refresh, args = [1800])
@@ -460,7 +459,7 @@ class FireAnt:
 
     def add_command(self, name, callback, key, behavior):
         """Add a command to the list"""
-        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').child(name).update({key.upper(): behavior}, token=self._idToken)
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').update({name: {'key': key.upper(), 'behavior': behavior}}, token=self._idToken)
         self._command_list[name] = callback
 
     def remove_command(self, name):
@@ -468,18 +467,11 @@ class FireAnt:
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').child(name).remove(token=self._idToken)
         del self._command_list[name]
 
-    def change_command(self, name, callback, arg_name, key, behavior):
+    def change_command(self, name, callback, key, behavior):
         """Change an existing command"""
         self.remove_command(name)
-        self.add_command(name, callback, arg_name, key, behavior)
+        self.add_command(name, callback, key, behavior)
 
-    def add_to_command(self, name, arg_name, key, behavior):
-        """Add another key acting upon the same field"""
-        try:
-            self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').child(name).child(arg_name).update({key.upper(): behavior}, token=self._idToken)
-        except KeyError:
-            print('That command is not registered')
-    
     def _command_handler(self, message):
         """Handle command events"""
         try:
