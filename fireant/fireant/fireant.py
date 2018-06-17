@@ -5,6 +5,8 @@ import sys
 import sched
 from threading import Thread
 import subprocess
+import random
+import inspect
 import time
 import json
 import requests
@@ -284,6 +286,7 @@ class FireAnt:
     def _stream_control_data(self):
         for command in self._command_list:
             self._my_control_streams[command] = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("ControlData").child(command).stream(self._command_handler, stream_id=command, token=self._idToken)
+            print ('Streaming: {} ...'.format(command))
 
     def _stream_sensor_data(self):
         self._my_sensor_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('users').child(self._userID).child("SensorData").stream(self._sensor_handler, stream_id="sensor data stream", token=self._idToken)
@@ -462,23 +465,52 @@ class FireAnt:
         """Add a command to the list"""
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').child(name).update({key.upper(): behavior}, token=self._idToken)
         self._command_list[name] = callback
+        print('{}: {}'.format(name, key))
+
+    def add_command_V2(self, callback, *field_key_behavior):
+        """Add a command to the list"""
+        print("New function registered")
+        name = callback.__name__
+        sig = inspect.signature(callback)
+        print('\t{} {}'.format(name, str(sig))) # print the function name and list of arguments
+
+        if field_key_behavior == ():            # if no keys are specified
+            controls = {}
+            for param in sig.parameters:
+                key1 = chr(random.randint(65, 90))  # generate random key binding with default behavior
+                key2 = chr(random.randint(65, 90))  # generate random key binding with default behavior
+                keyname_keytype_dict = {key1: 'additive', key2: 'regressive'}
+                controls[param] = keyname_keytype_dict
+                self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').child(param).update(keyname_keytype_dict, token=self._idToken)    
+                self._command_list[param] = callback
+            print('\t\t'+str(controls))         # print the assigned key bindings
+
+        else:                                   # if keys are specified
+            for item in field_key_behavior:
+                for field in item:              # get argument name
+                    for keyname in item[field]:     # get the key name
+                        behavior = item[field][keyname] # get the key behavior
+                        key = str(keyname)
+                        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').child(field).update({key.upper(): behavior}, token=self._idToken)    
+                        print('\t\t{}:[{}]::{}'.format(field, key, behavior))
+                self._command_list[field] = callback
 
     def remove_command(self, name):
         """Remove a command from the list"""
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').child(name).remove(token=self._idToken)
         del self._command_list[name]
 
-    def change_command(self, name, callback, arg_name, key, behavior):
-        """Change an existing command"""
-        self.remove_command(name)
-        self.add_command(name, callback, arg_name, key, behavior)
+    # def change_command(self, name, callback, arg_name, key, behavior):
+    #     """Change an existing command"""
+    #     self.remove_command(name)
+    #     self.add_command(name, callback, arg_name, key, behavior)
 
-    def add_to_command(self, name, arg_name, key, behavior):
-        """Add another key acting upon the same field"""
-        try:
-            self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').child(name).child(arg_name).update({key.upper(): behavior}, token=self._idToken)
-        except KeyError:
-            print('That command is not registered')
+    # def add_to_command(self, name, arg_name, key, behavior):
+    #     """Add another key acting upon the same field"""
+    #     try:
+    #         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('input').child(name).child(arg_name).update({key.upper(): behavior}, token=self._idToken)
+    #     except KeyError:
+    #         print('That command is not registered')
     
     def _command_handler(self, message):
         """Handle command events"""

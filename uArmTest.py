@@ -11,18 +11,21 @@ swift = sapi.SwiftAPI()
 
 def move_x(xcoord):
     (x, y, z) = swift.get_position()
-    swift.set_position(xcoord, y, z, speed=200, wait=True)
+    swift.set_position(x+xcoord, y, z, speed=200, wait=True)
 def move_y(ycoord):
-    swift.set_position(y=ycoord, speed=200, wait=True)
+    (x, y, z) = swift.get_position()
+    swift.set_position(x, y+ycoord, z, speed=200, wait=True)
 def move_z(zcoord):
-    swift.set_position(z=zcoord, speed=200, wait=True)
+    (x, y, z) = swift.get_position()
+    swift.set_position(x, y, z+zcoord, speed=200, wait=True)
 
 def stretch(scoord):
-    swift.set_polar(s=scoord ,speed=200, wait=True)
+    (s1,r1,h1) = swift.get_polar()
+    swift.set_polar(s=s1+scoord ,speed=200, wait=True)
 def rotation(rcoord):
-    swift.set_polar(r=rcoord ,speed=200, wait=True)
+    swift.set_polar(r=r1+rcoord ,speed=200, wait=True)
 def height(hcoord):
-    swift.set_polar(h=hcoord ,speed=200, wait=True)
+    swift.set_polar(h=h1+hcoord ,speed=200, wait=True)
 
 
 if __name__ == '__main__':
@@ -37,10 +40,15 @@ if __name__ == '__main__':
         # myAnt.add_sensor(name, callback_function)
         
         # myAnt.add_command(name, callback, argument, key, behavior)
-        myAnt.add_command("move_x", move_x, 'x', 'W', "additive")
-        myAnt.add_command("move_x", move_x, 'x', 'S', "regressive")
-        myAnt.add_command("buzz", swift.set_buzzer, 'on', 'H', 'hold')
-        myAnt.add_command("pump", swift.set_pump, 'on', 'G', 'tap')
+        myAnt.add_command("move_x", move_x, 'W', "additive")
+        myAnt.add_command("move_x", move_x, 'S', "regressive")
+        myAnt.add_command("move_y", move_y, 'A', "additive")
+        myAnt.add_command("move_y", move_y, 'D', "regressive")
+        myAnt.add_command("move_z", move_z, 'Q', "additive")
+        myAnt.add_command("move_z", move_z, 'E', "regressive")
+        myAnt.add_command("buzz", swift.set_buzzer, 'H', 'hold')
+        myAnt.add_command("pump", swift.set_pump, 'F', 'tap')
+        myAnt.add_command("grip", swift.set_gripper, 'G', 'tap')
         # myAnt.remove_command(name)
 
     except KeyboardInterrupt:
