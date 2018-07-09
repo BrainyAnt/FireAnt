@@ -58,7 +58,12 @@ if __name__ == '__main__':
         print(myAnt.get_name())
         print(myAnt.get_description())
 
+        myAnt.set_control_time(120)
+
         # myAnt.add_sensor(name, callback_function)
+        myAnt.add_sensor('Light', light_reader)
+        myAnt.add_sensor('Temperature', temperature_reader)
+        myAnt.add_sensor('Distance', distance_reader)
         # myAnt.remove_sensor(name)
 
         # myAnt.add_command(name, callback, key, behavior)

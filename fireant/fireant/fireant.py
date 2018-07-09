@@ -56,6 +56,7 @@ class FireAnt:
             self._userEntry = None
             self._userID = None
             self._userOn = None
+            self._control_time = None
             
             self._video_stream = None
             
@@ -138,6 +139,7 @@ class FireAnt:
         try:
             while True:         # TODO: Test if can be replaced with myAnt.is_robot_online
                 self._start_user_wait()
+                self._start_control_thread()
                 self._start_video_stream()
                 self._stream_sensor_data()
                 self._stream_control_data()
@@ -184,6 +186,10 @@ class FireAnt:
     def _set_robot_offline(self):
         """Set field value of isOnline to False"""
         self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('profile').update({'isOnline': False}, token=self._idToken)
+    
+    def _set_user_offline(self):
+        self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(self._userEntry).update({'userOn': False}, token=self._idToken)
+        #self._delete_entry(self._userEntry)
 
     def robot_online(self):
         """Return field value of isOnline"""
@@ -278,6 +284,9 @@ class FireAnt:
     def _get_entry_data_ON(self, entry):
         data = self._my_user_stream = self._database.child('users').child(self._ownerID).child('robots').child(self._robotID).child('queue').child(entry).get(token=self._idToken).val()
         return data['userOn']
+
+    def set_control_time(self, value):
+        self._control_time = value
     
     #==========================================================================================================================================
     # STREAMS
@@ -298,7 +307,7 @@ class FireAnt:
             if self._my_sensor_stream:
                 self._my_sensor_stream.close()
         except AttributeError:
-            pass
+            pass    
 
     #==========================================================================================================================================
     # LOG SESSION
@@ -363,7 +372,7 @@ class FireAnt:
         subprocess.Popen(cmd, shell=True)
     
     #==========================================================================================================================================
-    # KEEP ALIVE & TOKEN REFRESH
+    # KEEP ALIVE & TOKEN REFRESH & CONTROL TIMER
     #==========================================================================================================================================
     
     def _start_still_alive_every_n_secs(self, n_seconds):
@@ -417,6 +426,17 @@ class FireAnt:
                 scheduler.cancel(item)
             sys.stdout.write('Not still refreshing!!!')
             sys.exit(10)
+
+    def _start_control_thread(self):
+        # Start a new thread that kicks the user out of control in "self._control_time" seconds
+        self._controltimeThread = Thread(target = self._start_control_timer)
+        self._controltimeThread.daemon = True
+        self._controltimeThread.start()
+
+    def _start_control_timer(self):
+        time.sleep(self._control_time)
+        self._set_user_offline()
+
     #==========================================================================================================================================
     # SENSORS & COMMANDS
     #==========================================================================================================================================
