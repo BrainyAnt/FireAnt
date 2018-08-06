@@ -67,7 +67,7 @@ class FireAnt:
             self._clear_output()
             
             # Start a new thread with the "still_alive" recurrent function
-            self._keepalivethread = Thread(target = self._start_still_alive_every_n_secs, args = [3])
+            self._keepalivethread = Thread(target = self._start_still_alive_every_n_secs, args = [1])
             self._keepalivethread.daemon = True
             self._keepalivethread.start()
             print('Alive')
@@ -348,6 +348,7 @@ class FireAnt:
             streamparam = self._ownerID + '/' + camera + '/' + secretkey
             #path = os.path.dirname(os.path.realpath(__file__))
             cmd = self._path + '/' + self._v_stream_start + ' ' + streamparam
+            print(cmd)
             self._video_stream = subprocess.Popen(cmd, shell=True)
         except IOError:
             print("ERROR: Stream unable to start")

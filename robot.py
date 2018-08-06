@@ -2,7 +2,7 @@
 
 import random
 import os
-from fireant import FireAnt
+from fireant.fireant import FireAnt
 import userControl as UC        # use a custom control library
 
 def my_function(value):
