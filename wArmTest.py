@@ -40,9 +40,9 @@ def downward(hcoord):
     swift.set_polar(0, 0, -STEP if hcoord else 0, speed=SPEED, relative=True, wait=False)
 
 def wrist_cw(value):
-    swift.set_wrist(value)
+    swift.set_wrist(90+value)
 def wrist_ccw(value):
-    swift.set_wrist(value)
+    swift.set_wrist(90+value)
 
 def buzz(data):
     if data:
@@ -94,8 +94,8 @@ def get_attach3():
 if __name__ == '__main__':
     
     try:
-        authfile = open('uArm.json', 'r')
         path = os.path.dirname(os.path.realpath(__file__))
+        authfile = open(path+'/'+'uArm.json', 'r')
         myAnt = FireAnt(authfile, path, 'stream.sh', 'stream_stop.sh')
 
         print(myAnt.get_name())
